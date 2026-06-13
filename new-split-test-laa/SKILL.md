@@ -1,7 +1,7 @@
 ---
 name: new-split-test-laa
-description: "Starts a new A/B split test round on a live client landing page. Use when an A/B test has a winner and it's time to promote the winner and deploy a new challenger. If Variant B won, it becomes the new Variant A and the new challenger becomes Variant B. If Variant A won, the new challenger simply replaces Variant B. Handles bundler detection, GitHub file swap, Cloudflare secret update, redeploy, and verification. Triggers: new split test, start new test, variant won, new challenger, promote winner, /new-split-test-laa, /new-split-test."
-version: 1.1.0
+description: "Starts a new A/B split test round on a live client landing page. Use when an A/B test has a winner and it's time to promote the winner and deploy a new challenger. If Variant B won, it becomes the new Variant A and the new challenger becomes Variant B. If Variant A won, the new challenger simply replaces Variant B. Handles bundler detection, tracking script preservation, GitHub file swap, rounds table update, redeploy, and verification. Triggers: new split test, start new test, variant won, new challenger, promote winner, /new-split-test-laa, /new-split-test."
+version: 1.2.0
 ---
 
 # new-split-test-laa
@@ -117,6 +117,7 @@ Collect the remaining fields:
 | Field | Notes |
 |---|---|
 | New challenger folder path | Only needed if they chose Claude Design (option B) — path to the exported folder |
+| New Variant A label | What does the new Variant A (the winner) represent going forward? e.g. "Same-Day headline" or "Two-column layout". If Variant A won, this is the same as its previous label. This appears in the reports dashboard for the new round. |
 | New Variant B test description | What one thing does the new Variant B test? (e.g. "New headline — 'Free Estimates This Week Only'"). Keep it short — this label appears in the reports dashboard. |
 | Reset stats? | Yes to archive all existing pageview and lead data for a clean comparison; No to keep historical data visible alongside the new test |
 
@@ -400,14 +401,72 @@ cp /tmp/new-challenger.html /tmp/update-$SLUG/index-b.html
 
 ---
 
-## Phase 6: Update Variant B Label
+## Phase 6: Record the New Round
+
+This phase writes the new round to the D1 database so the reports dashboard tracks what each variant was testing. It also runs safe schema migrations for landers that haven't been updated to the round system yet.
+
+**Step 1 — Run schema migrations (safe to run even if already applied):**
 
 ```bash
-# Enter the new test description when prompted
-wrangler pages secret put VARIANT_B_LABEL --project-name lander-$SLUG
+# Add round column if it doesn't exist yet (error is safe to ignore if column already exists)
+wrangler d1 execute lander-$SLUG-db \
+  --command "ALTER TABLE events ADD COLUMN round INTEGER DEFAULT 1" \
+  --remote 2>&1 | grep -v "duplicate column" || true
+
+# Create rounds table if it doesn't exist yet
+wrangler d1 execute lander-$SLUG-db \
+  --command "CREATE TABLE IF NOT EXISTS rounds (id INTEGER PRIMARY KEY AUTOINCREMENT, round_number INTEGER UNIQUE, variant_a_label TEXT, variant_b_label TEXT, started_at DATETIME DEFAULT CURRENT_TIMESTAMP)" \
+  --remote
+
+# Tag all existing untagged events as round 1
+wrangler d1 execute lander-$SLUG-db \
+  --command "UPDATE events SET round = 1 WHERE round IS NULL" \
+  --remote
 ```
 
-The value to enter is the new Variant B test description from Phase 1 (e.g. `New Headline — "Free Estimates This Week Only"`). This updates the label shown in the reports dashboard.
+**Step 2 — Ensure Round 1 exists in the rounds table:**
+
+If this lander has never had a round recorded, insert a Round 1 row now using the labels from the previous test. Skip this step if the lander was deployed with `deploy-lander-laa` v3.3+, which already seeds Round 1 at deployment.
+
+```bash
+# Check if Round 1 already exists
+wrangler d1 execute lander-$SLUG-db \
+  --command "SELECT round_number FROM rounds WHERE round_number = 1" \
+  --remote
+```
+
+If the result is empty, ask the user:
+
+> "What were Variant A and Variant B testing in the previous (now-concluded) round? I'll record those as Round 1 in the history before creating the new round."
+
+Then insert Round 1:
+```bash
+wrangler d1 execute lander-$SLUG-db \
+  --command "INSERT OR IGNORE INTO rounds (round_number, variant_a_label, variant_b_label) VALUES (1, '[PREVIOUS_VARIANT_A_LABEL]', '[PREVIOUS_VARIANT_B_LABEL]')" \
+  --remote
+```
+
+**Step 3 — Get the current round number and insert the new round:**
+
+```bash
+# Check current max round
+wrangler d1 execute lander-$SLUG-db \
+  --command "SELECT MAX(round_number) as current_round FROM rounds" \
+  --remote
+```
+
+Take note of `current_round` from the output, then insert the new round (replace `[N]` with current_round + 1):
+
+```bash
+wrangler d1 execute lander-$SLUG-db \
+  --command "INSERT INTO rounds (round_number, variant_a_label, variant_b_label) VALUES ([N], '[NEW_VARIANT_A_LABEL]', '[NEW_VARIANT_B_DESCRIPTION]')" \
+  --remote
+```
+
+Where:
+- `[N]` = current_round + 1
+- `[NEW_VARIANT_A_LABEL]` = the "New Variant A label" from Phase 1B intake (what the winner represents)
+- `[NEW_VARIANT_B_DESCRIPTION]` = the "New Variant B test description" from Phase 1B intake
 
 ---
 
@@ -459,9 +518,12 @@ Open `https://[DOMAIN]/?ab_variant=a` in a fresh incognito window. Confirm Varia
 - If Variant B won, this should now show the former Variant B (the winner).
 - If Variant A won, this should look the same as before.
 
-**Step 3 — Verify reports dashboard label:**
+**Step 3 — Verify reports dashboard:**
 
-Open `https://[DOMAIN]/reports` and confirm the Variant B column label reflects the new test description.
+Open `https://[DOMAIN]/reports` and confirm:
+- A new round tab appears and is active
+- The Variant A and Variant B labels under the stats cards reflect the new round's descriptions
+- The stats cards show zero or fresh data (not the previous round's totals)
 
 If any step fails, diagnose before marking complete.
 
