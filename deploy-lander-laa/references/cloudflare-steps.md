@@ -63,3 +63,28 @@ If the domain is a **subdomain** (e.g. `landers.clientdomain.com`), skip this st
 > If it's an apex domain, also confirm `https://www.[DOMAIN]` loads correctly.
 
 Once the domain is live, proceed with setting the GHL form redirect URL in Phase 11.
+
+---
+
+## Manual DNS Fallback
+
+Use this only if the automated DNS record creation in Phase 10 Step 4 returns a permission error (your wrangler OAuth token may only have `zone:read` scope).
+
+> 1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) and log into your Cloudflare account
+> 2. In the left sidebar, click your domain under **Websites**, then go to **DNS** → **Records**
+> 3. Check if a CNAME record for the **apex** (`[DOMAIN]`) already exists pointing to `lander-[SLUG].pages.dev`. If not, click **Add Record**:
+>    - Type: CNAME
+>    - Name: `@`
+>    - Target: `lander-[SLUG].pages.dev`
+>    - Proxy: On (orange cloud)
+>    - Click Save
+> 4. Now check for a **www** CNAME record. This one is almost never auto-created. Click **Add Record**:
+>    - Type: CNAME
+>    - Name: `www`
+>    - Target: `lander-[SLUG].pages.dev`
+>    - Proxy: On (orange cloud)
+>    - Click Save
+>
+> **You need BOTH records** — apex AND www. If only one exists, the other domain will stay in Pending status and won't resolve.
+
+After adding both records, return to the polling step in Phase 10 Step 4 to verify both domains show Active.
