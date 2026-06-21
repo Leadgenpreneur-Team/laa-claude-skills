@@ -1,12 +1,12 @@
 ---
 name: deploy-lander-laa
-description: "Deploys a client landing page end-to-end for agency owners. Starts from a finished HTML file built in claude.ai/design. Handles GitHub repo creation, Cloudflare Pages + D1 + env vars, GHL form injection, split-test setup, tracking scripts, SEO/favicon, and domain connection. Triggers: deploy lander, deploy my lander, set up landing page, launch client lander, deploy lander for client, /deploy-lander-laa, /deploy-lander."
-version: 3.3.0
+description: "Deploys a client landing page end-to-end for agency owners. Starts from finished HTML files built in claude.ai/design. Handles GitHub repo creation, Cloudflare Pages + D1 + env vars, GHL form injection, split-test setup, Meta tracking (pixel-only or full CAPI), tracking scripts, SEO/favicon, automated domain connection, and Google Ads sitelinks. Triggers: deploy lander, deploy my lander, set up landing page, launch client lander, deploy lander for client, /deploy-lander-laa, /deploy-lander."
+version: 4.0.0
 ---
 
 # deploy-lander-laa
 
-Deployment engine for client landing pages. The user builds their lander in Claude Design first — this skill handles everything after that: GitHub, Cloudflare, GHL form, split testing, tracking, and domain connection.
+Deployment engine for client landing pages. Build your lander in claude.ai/design first — this skill handles everything after that: GitHub, Cloudflare, GHL form, split testing, tracking, and domain connection.
 
 ## Prerequisites
 
@@ -25,31 +25,34 @@ If either fails, run `gh auth login` or `wrangler login` to authenticate first.
 
 **wrangler not in PATH?** If `wrangler whoami` fails with "command not found", try `npx wrangler whoami`. If that works, use `npx wrangler` for every wrangler command throughout the deployment. If neither works, run `npm install -g wrangler` first.
 
-**DNS changes must use the Cloudflare dashboard.** The wrangler OAuth token has zone:read scope only — it cannot create or modify DNS records via API. Any DNS record additions or changes must be done in the Cloudflare dashboard directly.
-
 You also need access to the client's GHL sub-account before Phase 4.
 
 ---
 
 ## Phase 1: Intake
 
-Ask these questions up front. All are required except domain (can be TBD) and tracking scripts (can be deferred to Phase 9).
+Ask these questions up front. All are required except domain (can be TBD) and agency logo (optional).
 
 | Field | Notes |
 |---|---|
 | GitHub username or org | Where client repos will be created. Your GitHub username appears in your profile URL: `github.com/[username]`. If using an org, use the org name shown at `github.com/orgs/[orgname]`. When unsure, use your personal username. |
-| index-a.html | Path to Variant A — the finished lander built in Claude Design |
-| index-b.html | Path to Variant B — built in Claude Design before running the skill. Both variants are required. |
-| Thank-you page | Path to `thank-you.html` — required. If they don't have one, stop and send them back to M1.4 to download it. |
-| Client slug | Lowercase, hyphens only. Used for the GitHub repo name and Cloudflare project. If the client has multiple services or campaigns, differentiate by service to avoid naming conflicts — e.g. `smith-landscaping` and `smith-sprinkler-repair` for the same client. If it's their only service, keep it short: `smith-hvac`. |
-| Business name | Exact name as it should appear on the page — shown in the reports dashboard header |
-| Phone number | Any format — used to verify call tracking attributes are present |
-| Variant A description | Briefly describe what Variant A shows — e.g. "Original layout — hero + form above fold" or "Headline: Get a Free Quote Today". This label appears in the reports dashboard for Round 1. |
-| Variant B description | Briefly describe what Variant B tests vs Variant A. This label appears in the reports dashboard. Common split test types: image change, headline change, layout change, form on page instead of popup, different button color, different CTA text, hero section reorder. |
-| Reports username | Username to log in to the reports dashboard. Suggest keeping it simple: `admin` or their first name. |
-| Reports password | User chooses any password. Suggest a `word+word+number` format (e.g. `greentruck42`). No dashes or plus signs — these are hard to distinguish when typing in the login form. There is no recovery option — they must save this. |
-| Domain name | Optional at this stage. Note it if they have one, skip if not — needed at Phase 10. |
-| Agency logo URL | Optional. A hosted URL to your agency logo (PNG or SVG). This appears in the header of the client-facing reports dashboard. Leave blank if you don't want agency branding on the reports page. |
+| HTML folder path | Full path to the folder containing your lander files. Put your Variant A file, Variant B file, and thank-you page in it — you don't need to rename them first. Claude will identify each one by filename and confirm before copying. |
+| Client slug | Lowercase, hyphens only. Used for the GitHub repo name and Cloudflare project. If the client has multiple services, differentiate by service: `smith-landscaping` vs `smith-sprinkler-repair`. If it's their only service, keep it short: `smith-hvac`. |
+| Business name | Exact name as it should appear in the reports dashboard and commits. |
+| Phone number | Any format — used to verify call tracking attributes are present. |
+| Variant A description | Briefly describe what Variant A shows — e.g. "Original layout — hero + form above fold" or "Headline: Get a Free Quote Today". Appears in the reports dashboard for Round 1. |
+| Variant B description | What one thing does Variant B test vs Variant A? e.g. "New headline — 'Same-Day Service Available'". Appears in the reports dashboard. |
+| Reports username | Username to log in to the reports dashboard. Suggest `admin` or the client's first name. |
+| Reports password | User chooses any password. Suggest a `word+word+number` format (e.g. `greentruck42`). No dashes or plus signs — hard to distinguish when typing. There is no recovery option — they must save this. |
+| Meta tracking level | Ask: "Will you be running Meta (Facebook/Instagram) ads for this client? If so, do you have — or plan to get — a Conversions API access token?" Three options: **Full CAPI** — they have both a Meta Pixel and a CAPI access token. **Pixel-only** — they have the Pixel but no access token. **No Meta** — no Meta ads at all. |
+| Domain name | Optional at this stage. Note it if they have one — needed at Phase 10. |
+| Agency logo URL | Optional. A hosted URL to your agency logo (PNG or SVG). Appears in the header of the client-facing reports dashboard. Leave blank to omit. |
+
+After confirming all fields, set the Meta tracking level as a shell variable for use in later phases:
+
+```bash
+META_TRACKING="[full-capi or pixel-only or none]"
+```
 
 Confirm all fields before moving to Phase 2.
 
@@ -57,19 +60,46 @@ Confirm all fields before moving to Phase 2.
 
 ## Phase 2: Prep Working Files
 
-### Step 1 — Copy lander to working folder
+### Step 1 — Identify and copy files
 
 ```bash
 SLUG="[client-slug]"
 WORK_DIR="/tmp/lander-$SLUG"
-mkdir -p "$WORK_DIR"
-cp "[PATH_TO_INDEX_A]" "$WORK_DIR/index-a.html"
-cp "[PATH_TO_INDEX_B]" "$WORK_DIR/index-b.html"
-cp "[PATH_TO_THANK_YOU]" "$WORK_DIR/thank-you.html"
+mkdir -p "$WORK_DIR/assets"
+
+ls "[PROVIDED_FOLDER_PATH]"/*.html
+```
+
+Identify which file is which based on the filename:
+- File with "variant b", "variant-b", "v2", or "- b" (case-insensitive) → `index-b.html`
+- File with "thank you" or "thank-you" (case-insensitive) → `thank-you.html`
+- The remaining HTML file → `index-a.html`
+
+Confirm the mapping with the user before copying:
+
+> "Here's how I'm mapping your files:
+> - `index-a.html` ← [FILENAME]
+> - `index-b.html` ← [FILENAME]
+> - `thank-you.html` ← [FILENAME]
+>
+> Does that look right?"
+
+Once confirmed:
+
+```bash
+cp "[PROVIDED_FOLDER_PATH]/[VARIANT_A_FILENAME]" "$WORK_DIR/index-a.html"
+cp "[PROVIDED_FOLDER_PATH]/[VARIANT_B_FILENAME]" "$WORK_DIR/index-b.html"
+cp "[PROVIDED_FOLDER_PATH]/[THANK_YOU_FILENAME]" "$WORK_DIR/thank-you.html"
+
+# Copy any non-HTML asset files from the folder
+for f in "[PROVIDED_FOLDER_PATH]"/*; do
+  [[ "$f" == *.html ]] && continue
+  cp "$f" "$WORK_DIR/assets/"
+done
 ```
 
 If they do not have a thank-you page, stop here:
-> "You need a thank-you page before we can continue. Go back to M1.4, download the thank-you template, and come back once you have it."
+> "You need a thank-you page before we can continue. Build one in claude.ai/design — it should confirm the visitor's form submission. Come back once you have it."
 
 ### Step 2 — Bundler strip
 
@@ -113,7 +143,6 @@ function processFile(inputPath) {
   console.log('Stripped:', inputPath, '— extracted', Object.keys(manifest).length, 'assets');
 }
 
-// Run on whichever files had bundler matches
 processFile('/tmp/lander-[SLUG]/index-a.html');
 processFile('/tmp/lander-[SLUG]/index-b.html');
 processFile('/tmp/lander-[SLUG]/thank-you.html');
@@ -167,7 +196,7 @@ PYEOF
 
 **Check for missing referenced assets:**
 
-After bundler stripping, images and fonts are saved to `assets/` with UUID filenames. However, Claude Design sometimes references additional files by plain name (e.g. `src="logo.jpg"`) or as CSS `url()` values inside `<style>` blocks (e.g. `background-image: url('hero-clearing.jpg')`). Both will silently break on the live site.
+After bundler stripping, images and fonts are saved to `assets/` with UUID filenames. However, Claude Design sometimes references additional files by plain name (e.g. `src="logo.jpg"`) or as CSS `url()` values inside `<style>` blocks (e.g. `background-image: url('hero.jpg')`). Both will silently break on the live site.
 
 ```python
 python3 - <<'PYEOF'
@@ -183,13 +212,11 @@ for fname in ['index-a.html', 'index-b.html', 'thank-you.html']:
     with open(path) as f:
         html = f.read()
 
-    # HTML src attributes
     for m in re.finditer(r'src="([^"]*\.(jpg|jpeg|png|svg|webp|gif))"', html, re.IGNORECASE):
         ref = m.group(1)
         if not (ref.startswith('/assets/') or ref.startswith('http') or ref.startswith('data:')):
             missing.append(f'{fname}: src="{ref}"')
 
-    # CSS url() references (background images in <style> blocks)
     for m in re.finditer(r"url\(['\"]?([^)'\"]*\.(jpg|jpeg|png|svg|webp|gif))['\"]?\)", html, re.IGNORECASE):
         ref = m.group(1)
         if not (ref.startswith('/assets/') or ref.startswith('http') or ref.startswith('data:')):
@@ -222,7 +249,7 @@ If any are found, tell the user to fix them in Claude Design before continuing.
 
 Tell the user:
 > "I have both variants ready in the working folder:
-> - `index-a.html` — Variant A
+> - `index-a.html` — Variant A ([Variant A description from intake])
 > - `index-b.html` — Variant B ([Variant B description from intake])
 >
 > Confirm these are correct and we'll move on to the GHL form check."
@@ -280,7 +307,6 @@ gh repo create $GITHUB_ORG/lander-$SLUG \
 # Give GitHub a moment to initialize the template before cloning
 sleep 3
 
-# Clone to a separate path — avoids conflict with the WORK_DIR already at /tmp/lander-$SLUG
 gh repo clone $GITHUB_ORG/lander-$SLUG $REPO_DIR
 cd $REPO_DIR
 ```
@@ -375,13 +401,12 @@ database_id = "[DATABASE_ID_FROM_ABOVE]"
 wrangler d1 execute lander-[SLUG]-db --file=schema.sql --remote
 
 # Seed Round 1 — records what each variant is testing from day one
-# Replace placeholders with the descriptions collected in Phase 1 intake
 wrangler d1 execute lander-[SLUG]-db \
   --command "INSERT INTO rounds (round_number, variant_a_label, variant_b_label) VALUES (1, '[VARIANT_A_DESCRIPTION]', '[VARIANT_B_DESCRIPTION]')" \
   --remote
 ```
 
-Generate a random token for the reports API (user never needs to see this):
+Generate a random token for the reports API (the user never needs to see or use this):
 ```bash
 REPORTS_TOKEN=$(openssl rand -hex 16)
 echo "Reports token: $REPORTS_TOKEN"
@@ -406,7 +431,7 @@ wrangler pages secret put PROJECT_NAME --project-name lander-[SLUG]
 wrangler pages secret put PROJECT_SLUG --project-name lander-[SLUG]
 # → enter the client slug
 
-# Variant preview URLs (variant labels now come from the rounds table, seeded above)
+# Variant preview URLs (labels come from the rounds table seeded above)
 wrangler pages secret put VARIANT_A_URL --project-name lander-[SLUG]
 # → enter: /?ab_variant=a
 
@@ -470,7 +495,7 @@ Do not proceed until the split test cookie is confirmed working.
 
 Check what's already present in the lander:
 ```bash
-grep -c 'noindex\|rel="icon"' index-a.html
+grep -c 'noindex\|rel="icon"' /tmp/repo-[SLUG]/index-a.html
 ```
 
 Verify these tags are in `<head>` of **all four files** — add if missing:
@@ -479,22 +504,36 @@ Verify these tags are in `<head>` of **all four files** — add if missing:
 
 The four files are: `index-a.html`, `index-b.html`, `thank-you.html`, `reports.html`
 
-For the favicon file — ask the user to provide it:
+**Update SEO title tags:**
+
+Ask the user:
+> "What is the primary service this lander is for? (e.g. 'HVAC Repair') And what city or region does it target? (e.g. 'Denver, CO')"
+
+Update the `<title>` tag in all four files:
+- `index-a.html` and `index-b.html`: `[Service] in [City] | [Business Name]`
+- `thank-you.html`: `Thank You! | [Business Name]`
+- `reports.html`: `Reports | [Business Name]` (if it has a placeholder title)
+
+```bash
+grep -h "<title>" /tmp/repo-[SLUG]/index-a.html /tmp/repo-[SLUG]/index-b.html /tmp/repo-[SLUG]/thank-you.html /tmp/repo-[SLUG]/reports.html
+```
+
+**For the favicon file**, ask the user:
 > "Do you have a favicon file to add? Drag it into VS Code or give me the path.
 >
-> If you don't have one yet, use this Canva template to make one quickly — it takes about 2 minutes: https://canva.link/p1b06ycti45q64e
+> If you don't have one yet, use this Canva template — it takes about 2 minutes: https://canva.link/p1b06ycti45q64e
 >
-> Export it as PNG, then drag it in. Or type 'skip' to add it later."
+> Export as PNG, then drag it in. Or type 'skip' to add it later."
 
 If provided:
 ```bash
-cp /path/to/favicon.png lander-[SLUG]/favicon.png
+cp /path/to/favicon.png /tmp/repo-[SLUG]/favicon.png
 ```
 
 Update `README.md` — add the `.pages.dev` URL at the top under the project name.
 
 ```bash
-git add . && git commit -m "Add favicon, confirm noindex" && git push
+git add . && git commit -m "Add favicon, SEO titles, confirm noindex" && git push
 wrangler pages deploy . --project-name lander-[SLUG]
 ```
 
@@ -514,12 +553,25 @@ Then ask:
 > "Do you have a call tracking number swap script? This is a body-level script from a tool like CallRail or GHL that replaces the phone number on the page with a trackable one. Paste it here or type 'skip'."
 
 Then ask:
-> "Do you have a Google Ads conversion event tag or Meta Lead event code? These fire on the thank-you page only. Paste them here or type 'skip'."
+> "Do you have a Google Ads conversion event tag for the thank-you page? Paste it here or type 'skip'."
+
+**Meta Lead event — depends on `META_TRACKING` from intake:**
+
+- **`full-capi`:** do NOT add a manual `fbq('track','Lead')` to the thank-you page. The worker already fires the Meta `Lead` event (browser + server, deduped) when the Pixel base code is present in `<head>`. A manual one would double-fire. Phase 9.5 handles the CAPI setup.
+- **`pixel-only`:** the worker's CAPI won't fire (no access token), so add a client-side Lead event to `thank-you.html`. Inject this script in the `<!-- CONVERSION TRACKING -->` block:
+  ```html
+  <!-- Meta Pixel Lead Event (pixel-only — no CAPI) -->
+  <script>
+    if (typeof fbq === 'function') { fbq('track', 'Lead'); }
+  </script>
+  ```
+  This requires the Meta Pixel base code in `<head>`. If the user didn't provide it above, ask for it now — the Lead event won't fire without it.
+- **`none`:** skip all Meta tracking. No Pixel, no Lead event.
 
 If provided, inject into the appropriate files:
 - Head scripts (gtag, pixel base): place inside the `<!-- TRACKING SCRIPTS (HEAD) -->` comment block in `index-a.html`, `index-b.html`, and `thank-you.html`
 - Call tracking swap script: place inside the `<!-- TRACKING SCRIPTS (BODY) -->` comment block in `index-a.html`, `index-b.html`, and `thank-you.html`
-- Conversion events: place inside the `<!-- CONVERSION TRACKING -->` comment block in `thank-you.html` only
+- Conversion events (Google Ads + pixel-only Meta Lead): place inside the `<!-- CONVERSION TRACKING -->` comment block in `thank-you.html` only
 
 Commit and redeploy:
 ```bash
@@ -529,37 +581,115 @@ wrangler pages deploy . --project-name lander-[SLUG]
 
 ---
 
+## Phase 9.5: Meta Conversions API (optional)
+
+**Skip this phase if `META_TRACKING` is `pixel-only` or `none`.** Move directly to Phase 10.
+
+**Run this phase only if `META_TRACKING` is `full-capi`.**
+
+The CAPI code is already built into `_worker.js` (form `Lead` + qualified-call `Contact`, deduped). Turning it on is config only — set the Meta secrets, build the GHL call-to-webhook workflow, and verify in Test Events.
+
+Load `references/meta-capi.md` and follow it end to end. You'll need from the user: domain verified in Meta Business Suite, the dataset ID, the CAPI access token, and confirmation the ad set is optimizing for the `Lead` or `Contact` event.
+
+Walk the GHL qualified-call workflow step-by-step using the instructions in `meta-capi.md` — don't just paste the doc at the user. Pre-fill the client's webhook URL (`https://[DOMAIN]/api/ghl-call`) and the `X-Webhook-Secret` value so they can't mistype them.
+
+---
+
 ## Phase 10: Domain Purchase + Connection
 
-Load `references/cloudflare-steps.md` → "Purchasing and Connecting a Domain" and walk the user through the Cloudflare dashboard steps.
+**Subdomain vs. apex domain — determine this first:**
 
-**Before connecting the domain, establish the canonical URL.** Ask:
+Ask the user whether the domain will be a subdomain (e.g. `quote.bobsplumbing.com`) or an apex domain (e.g. `bobsplumbing.com`).
 
-> "Which URL do you want to use as the single canonical address for this lander — the apex domain (e.g. `bobsplumbing.com`) or the www subdomain (e.g. `www.bobsplumbing.com`)? Pick one — we'll set that as the primary and redirect the other to it."
+- **Subdomain:** only one custom domain entry is needed — skip the www, canonical redirect, and Step 5 below. After Step 3, go straight to Step 4 (single domain polling), then skip to Phase 11.
+- **Apex domain:** continue with all steps below.
 
-The canonical URL is the one you'll set as the GHL form redirect URL in Phase 11. Using both without a redirect breaks UTM pass-through: a visitor lands on one domain, sessionStorage stores the UTMs there, but GHL redirects to the other domain where sessionStorage is empty.
+**Step 1 — Domain purchase (manual):**
 
-**Step 1 — Add both custom domains in Cloudflare Pages:**
+Load `references/cloudflare-steps.md` → "Purchasing and Connecting a Domain" and walk the user through registering the domain in the Cloudflare dashboard. Wait for confirmation before proceeding.
 
-In Cloudflare Pages > lander-[SLUG] > Custom Domains, add both:
-1. The apex domain (e.g. `bobsplumbing.com`)
-2. The `www` subdomain (e.g. `www.bobsplumbing.com`)
+**Step 2 — Choose the canonical domain (apex only):**
 
-If the domain is a **subdomain** (e.g. `quote.bobsplumbing.com`), only one custom domain entry is needed — skip the `www` entry and the redirect steps below.
+> "Which URL do you want to use as the primary address for this lander — the bare domain (e.g. `bobsplumbing.com`) or the www version (e.g. `www.bobsplumbing.com`)? Pick one — we'll redirect the other to it. This matters for UTM tracking: a visitor who lands on one domain stores their UTM data there, so if GHL redirects to the other domain, that data is lost."
 
-**Step 2 — Add the missing DNS record manually:**
+Most landers use the bare apex as canonical. Note the answer for Step 5.
 
-> **Important:** The wrangler OAuth token only has `zone:read` scope — it cannot create DNS records. All DNS changes must be made in the Cloudflare dashboard.
+**Step 3 — Add both custom domains (automated):**
 
-In the Cloudflare DNS tab for the domain, confirm both records exist (add manually if missing):
-- Apex → CNAME or A record pointing to `lander-[SLUG].pages.dev` (Cloudflare may auto-create this when you add the apex as a custom domain)
-- `www` → CNAME pointing to `lander-[SLUG].pages.dev` (this is typically NOT auto-created — add it manually)
+```bash
+CF_TOKEN=$(cat ~/Library/Preferences/.wrangler/config/default.toml 2>/dev/null | grep oauth_token | awk '{print $3}' | tr -d '"')
+if [ -z "$CF_TOKEN" ]; then
+  CF_TOKEN=$(cat ~/.wrangler/config/default.toml 2>/dev/null | grep oauth_token | awk '{print $3}' | tr -d '"')
+fi
+ACCOUNT_ID=$(wrangler whoami 2>&1 | grep -oE '[0-9a-f]{32}' | head -1)
+DOMAIN="[DOMAIN]"
 
-Do not proceed to Step 3 until both domains resolve the lander.
+# Add apex domain
+curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/lander-${SLUG}/domains" \
+  -H "Authorization: Bearer ${CF_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\": \"${DOMAIN}\"}" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Apex:', 'added' if d['success'] else 'FAILED', d.get('errors',''))"
 
-**Step 3 — Add canonical redirect to `_worker.js`:**
+# Add www domain
+curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/lander-${SLUG}/domains" \
+  -H "Authorization: Bearer ${CF_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\": \"www.${DOMAIN}\"}" | python3 -c "import sys,json; d=json.load(sys.stdin); print('WWW:', 'added' if d['success'] else 'FAILED', d.get('errors',''))"
+```
 
-This prevents UTM tracking loss when a visitor arrives on the non-canonical domain. Open `/tmp/repo-[SLUG]/_worker.js` and add this block at the very top of the `fetch` handler, before any existing routing:
+**Step 4 — Create DNS records + poll for Active (automated):**
+
+```bash
+# Get zone ID for the domain
+ZONE_ID=$(curl -s "https://api.cloudflare.com/client/v4/zones?name=${DOMAIN}&account.id=${ACCOUNT_ID}" \
+  -H "Authorization: Bearer ${CF_TOKEN}" | python3 -c "import sys,json; print(json.load(sys.stdin)['result'][0]['id'])")
+echo "Zone ID: $ZONE_ID"
+
+# Create apex CNAME (Cloudflare sometimes auto-creates this — safe to run regardless)
+curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
+  -H "Authorization: Bearer ${CF_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{\"type\":\"CNAME\",\"name\":\"${DOMAIN}\",\"content\":\"lander-${SLUG}.pages.dev\",\"proxied\":true}" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print('Apex DNS:', 'created' if d['success'] else d.get('errors',''))"
+
+# Create www CNAME (almost never auto-created — always add manually)
+curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
+  -H "Authorization: Bearer ${CF_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{\"type\":\"CNAME\",\"name\":\"www\",\"content\":\"lander-${SLUG}.pages.dev\",\"proxied\":true}" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print('WWW DNS:', 'created' if d['success'] else d.get('errors',''))"
+```
+
+> If either DNS call returns a permission error (`zone:edit` scope missing on your token), fall back to manual: load `references/cloudflare-steps.md` → "Manual DNS Fallback" and walk the user through adding the records in the Cloudflare dashboard DNS tab.
+
+Poll until both custom domains show Active — do not proceed until both pass:
+
+```bash
+for i in $(seq 1 20); do
+  STATUSES=$(curl -s "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/lander-${SLUG}/domains" \
+    -H "Authorization: Bearer ${CF_TOKEN}" \
+    | python3 -c "
+import sys, json
+domains = json.load(sys.stdin)['result']
+for d in domains:
+    print(f\"{d['name']}: {d['status']}\")
+")
+  echo "$STATUSES"
+  if echo "$STATUSES" | grep -q "pending\|initializing"; then
+    echo "Waiting... (attempt $i/20)"
+    sleep 15
+  else
+    echo "Both domains Active."
+    break
+  fi
+done
+```
+
+If either domain stays Pending after 5 minutes: the most common cause is a missing DNS record. Check that both the apex CNAME and the www CNAME exist in the Cloudflare DNS tab for the domain.
+
+**Step 5 — Add canonical redirect to `_worker.js` (apex only):**
+
+Open `/tmp/repo-[SLUG]/_worker.js` and add this block at the very top of the `fetch` handler, before any existing routing:
 
 ```javascript
 // Canonical redirect
@@ -571,7 +701,7 @@ if (reqUrl.hostname !== CANONICAL_HOST) {
 }
 ```
 
-Replace `[CANONICAL_HOSTNAME]` with whichever domain was chosen above. Skip this step entirely for subdomains.
+Replace `[CANONICAL_HOSTNAME]` with the domain chosen in Step 2. Skip this step entirely for subdomains.
 
 ```bash
 cd /tmp/repo-[SLUG]
@@ -582,7 +712,7 @@ wrangler pages deploy . --project-name lander-[SLUG]
 
 After redeployment, confirm: visiting the non-canonical domain redirects (301) to the canonical with all URL parameters preserved.
 
-Do not proceed to Phase 11 until all domains resolve correctly and the canonical redirect (if applicable) is verified.
+Do not proceed to Phase 11 until all domains resolve correctly and the canonical redirect is verified.
 
 ---
 
@@ -666,3 +796,20 @@ FINAL CHECKS BEFORE GOING LIVE:
 [ ] Thank-you page redirect URL has all GHL merge tags (name, email, phone)
 [ ] GitHub repo is set to private
 ```
+
+**Google Ads Sitelinks (offer this proactively):**
+
+After printing the summary, offer:
+
+> "Since this is a single-page lander, your Google Ads sitelinks need to use anchor links that jump to sections on the page (e.g. `https://[DOMAIN]/#reviews`). Want me to generate 4 sitelink URLs based on your page sections? I'll read the HTML and find the right anchors."
+
+If they say yes, read `index-a.html` and identify 4 meaningful anchor targets (e.g. `#free-quote`, `#reviews`, `#how-it-works`, `#service-area`). If the sections don't have `id` attributes, add them to the HTML, commit, and redeploy, then output the sitelinks:
+
+| Sitelink Label | URL |
+|---|---|
+| Get a Free Quote | `https://[DOMAIN]/#free-quote` |
+| See Our Reviews | `https://[DOMAIN]/#reviews` |
+| How It Works | `https://[DOMAIN]/#how-it-works` |
+| Service Area | `https://[DOMAIN]/#service-area` |
+
+Adjust labels and anchors to match the actual page content.
