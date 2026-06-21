@@ -1,7 +1,7 @@
 ---
 name: new-split-test-laa
 description: "Starts a new A/B split test round on a live client landing page. Use when an A/B test has a winner and it's time to promote the winner and deploy a new challenger. If Variant B won, it becomes the new Variant A and the new challenger becomes Variant B. If Variant A won, the new challenger simply replaces Variant B. Handles bundler detection, tracking script preservation, GitHub file swap, rounds table update, redeploy, and verification. Triggers: new split test, start new test, variant won, new challenger, promote winner, /new-split-test-laa, /new-split-test."
-version: 1.2.0
+version: 1.3.0
 ---
 
 # new-split-test-laa
@@ -426,7 +426,7 @@ wrangler d1 execute lander-$SLUG-db \
 
 **Step 2 — Ensure Round 1 exists in the rounds table:**
 
-If this lander has never had a round recorded, insert a Round 1 row now using the labels from the previous test. Skip this step if the lander was deployed with `deploy-lander-laa` v3.3+, which already seeds Round 1 at deployment.
+If this lander has never had a round recorded, insert a Round 1 row now using the labels from the previous test. Skip this step if the lander was deployed with `deploy-lander-laa` v3.3.0 or later (including v4.0.0), which already seeds Round 1 at deployment.
 
 ```bash
 # Check if Round 1 already exists
@@ -518,7 +518,11 @@ Open `https://[DOMAIN]/?ab_variant=a` in a fresh incognito window. Confirm Varia
 - If Variant B won, this should now show the former Variant B (the winner).
 - If Variant A won, this should look the same as before.
 
-**Step 3 — Verify reports dashboard:**
+**Step 3 — Verify tracking on the new Variant B:**
+
+Open `https://[DOMAIN]/b` in a fresh incognito window. Open DevTools → Network tab and confirm tracking script requests are firing — look for Google Tag, Meta Pixel, or call tracking requests (whichever this lander uses). If tracking scripts were injected in Phase 4 but nothing fires here, re-check the injection output from Phase 4 before proceeding.
+
+**Step 4 — Verify reports dashboard:**
 
 Open `https://[DOMAIN]/reports` and confirm:
 - A new round tab appears and is active
