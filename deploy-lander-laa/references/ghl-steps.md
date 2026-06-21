@@ -6,9 +6,9 @@
 
 Use this for Phase 4 of the deployment.
 
-Tell the team member:
+Tell the user:
 
-> Go into GoHighLevel (Automation Pilot) and follow these steps:
+> Go into GoHighLevel and follow these steps:
 >
 > 1. Log into the **client's sub-account** (not the agency account)
 > 2. In the left sidebar, go to **Sites**
@@ -37,9 +37,9 @@ Paste the full block including the `<script>` tag at the end.
 
 ## Setting the Form Redirect URL
 
-Use this for Phase 8 (temp `.pages.dev` URL) and again in Phase 11 (final custom domain URL).
+Use this for Phase 11 of the deployment once the custom domain is live.
 
-Tell the team member:
+Tell the user:
 
 > In GHL, go to the client's sub-account and follow these steps:
 >
@@ -50,7 +50,7 @@ Tell the team member:
 > 5. Clear the existing value and paste in **the exact URL below** — copy it character for character, including everything after the `?`
 > 6. Save the form
 
-**URL to use (Phase 11)** — always set this to the custom domain, not the `.pages.dev` URL:
+**URL to use (Phase 11)** — always set this to the custom domain:
 ```
 https://[DOMAIN]/thank-you?name={{contact.name}}&email={{contact.email}}&phone={{contact.phone}}
 ```
@@ -58,3 +58,15 @@ https://[DOMAIN]/thank-you?name={{contact.name}}&email={{contact.email}}&phone={
 **CRITICAL — do not drop the query string.** The `?name={{contact.name}}&email={{contact.email}}&phone={{contact.phone}}` part is required. These are GHL merge fields that pass the lead's info into the URL so the reports dashboard can capture the lead event. If the URL is saved without them, lead data will not be recorded.
 
 Double-check the saved URL in GHL and confirm the full string including `?name=...&email=...&phone=...` is present before moving on.
+
+---
+
+## Testing the Form Before the Domain Is Ready (Optional)
+
+If you want to test form submissions before the custom domain is connected, set the GHL redirect to the temporary `.pages.dev` URL first:
+
+```
+https://lander-[SLUG].pages.dev/thank-you?name={{contact.name}}&email={{contact.email}}&phone={{contact.phone}}
+```
+
+Then update it to the custom domain URL in Phase 11 once the domain is live.
