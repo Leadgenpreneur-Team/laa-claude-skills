@@ -23,7 +23,7 @@ After Phase 3 research, ask only for what you still don't know. Typical items:
 | Offer | Propose one: "Free Quote" (rentals), "Free Estimate" (home services), "Free Consultation" (law, only as the firm offers it). "Want to use that, or something else (like $50 off)?" | The proposal |
 | Google Business Profile | "I found this Google listing: [name, address, rating]. Is that the right one?" If several match, show them and ask. | Ask to paste 6 reviews |
 | Other review sites | "Do they have reviews anywhere else, like Yelp, Angi, HomeAdvisor, or Facebook? Paste the links if so." Mention any you already found. | Google only |
-| Service area map | "Do you have a service area map image? If not, the page lists the towns without a map." | Towns only, no map |
+| Service area map | "Do you have a service area map image? If not, you can make one with the prompt in the Service Area Map lesson (https://www.skool.com/local-google-ads/classroom/5d541fd8?md=c763cd605e824e3a8ccfec4d8c8887af) in ChatGPT or Gemini, or we'll list the towns without a map and you can add it later." | Towns only, no map |
 | Photos | "Do you have a folder of real job photos? Real photos beat stock. If not, I'll use photos from the website." | Website photos |
 | Logo | Usually from the website. Ask only if you can't find a clean one. | Business name as text |
 | Brand color | Pull from the website. Ask only if unclear. | Website's main button color |

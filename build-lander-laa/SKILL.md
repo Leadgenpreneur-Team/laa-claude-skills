@@ -83,7 +83,7 @@ Collect: business name as customers know it, phone, city and service area, years
 
 **Reviews:** load `references/copy-rules.md` → "Reviews" and follow it. Check Google plus Yelp, Angi, HomeAdvisor, and Facebook. Each platform's rating is shown separately (never combined), and six real reviews are quoted word for word with the correct source on each card. If a profile can't be read, ask the person to paste that platform's reviews, rating, and count.
 
-**Service area map:** this skill doesn't make map images. If the person has one (or makes one with the service area map prompt from the Skool classroom), put it in `assets/` and use it. Otherwise keep the town list and remove the map slot cleanly, with no empty box left behind.
+**Service area map:** this skill doesn't make map images. If the person has one, put it in `assets/` and use it. If they don't, point them to the **M2.3.1 Service Area Map Image Prompt** lesson in the Claude Code Landing Pages course (https://www.skool.com/local-google-ads/classroom/5d541fd8?md=c763cd605e824e3a8ccfec4d8c8887af), which has the prompt to make one in ChatGPT or Gemini. They can give it to you now or add it later with edit-lander-laa. Otherwise keep the town list and remove the map slot cleanly, with no empty box left behind.
 
 **Photos:** use the person's own photos first (ask for a folder). Then photos from the business's website (download them into `assets/`, never hotlink). Only use stock photos if the person says that's OK, and say which ones are stock.
 
