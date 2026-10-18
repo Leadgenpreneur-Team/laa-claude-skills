@@ -2,7 +2,7 @@
 
 ## What This Skill Does
 
-Deploys a client landing page end-to-end — from finished HTML files to a live custom domain with split testing, lead tracking, and a reports dashboard. You build the lander in claude.ai/design first, then run this skill to handle everything else.
+Deploys a landing page end to end, from finished HTML files to a live custom domain with split testing, lead tracking, and a reports dashboard. Build the pages first with **build-lander-laa** (or in Claude Design), then run this skill to handle everything else. It can also clone a lander that's already live onto a new ad channel.
 
 ## Quick Start
 
@@ -10,6 +10,7 @@ Trigger the skill by saying any of:
 - "Deploy a lander for [client name]"
 - "Set up a landing page for [client]"
 - "Launch a new client lander"
+- "Clone my lander for Google Ads"
 - `/deploy-lander-laa`
 
 Claude will ask for the intake details, then walk you through each phase.
@@ -20,9 +21,9 @@ Claude will ask for the intake details, then walk you through each phase.
 
 | Item | Where to Get It |
 |------|-----------------|
-| Variant A HTML file | Built in claude.ai/design |
-| Variant B HTML file | Built in claude.ai/design — one change from Variant A |
-| Thank-you page HTML | Built in claude.ai/design |
+| Variant A HTML file | Made by build-lander-laa, or built in Claude Design |
+| Variant B HTML file | Made by build-lander-laa, or built in Claude Design. One change from Variant A |
+| Thank-you page HTML | Made by build-lander-laa, or built in Claude Design |
 | A folder containing all three files | Put them in one folder on your computer — you don't need to rename them |
 | Client business name | From the client |
 | Phone number | From the client |
@@ -32,7 +33,7 @@ Claude will ask for the intake details, then walk you through each phase.
 | Meta tracking level | Full CAPI / Pixel-only / No Meta (see Phase 1 for the question to ask) |
 | Favicon file | Client brand kit, or make one with the Canva link in Phase 8 |
 | Domain name | Can be TBD — only needed at Phase 10 |
-| Reports dashboard password | You choose — format like `greentruck42` |
+| Reports dashboard password | Nothing to prepare. Claude generates a random one and shows it once at the end. Save it in your password manager |
 | Agency logo URL (optional) | Hosted URL to your agency logo — appears in the reports dashboard |
 
 ---
@@ -40,6 +41,7 @@ Claude will ask for the intake details, then walk you through each phase.
 ## How a Deployment Flows
 
 ```
+Phase 0:   Starting point: build-lander-laa folder, your own files, or a clone
 Phase 1:   Intake — Claude collects all info; you put your HTML files in a folder
 Phase 2:   Prep files — Claude identifies and copies files, checks bundler, call tracking, assets
 Phase 3:   Confirm variants — You confirm the file mapping before Claude proceeds
@@ -64,7 +66,7 @@ Phase 12:  Wrap-up — Credential summary + optional Google Ads sitelinks
 - Strips the Claude Design bundler wrapper if present
 - Adds `data-tel-link` to all phone links
 - Creates the GitHub repo from the LAA template
-- Creates the Cloudflare Pages project, D1 database, and sets all secrets
+- Creates the Cloudflare Pages project, D1 database, and sets all secrets, including a random reports password
 - Deploys the site and verifies the split test cookie
 - Updates SEO title tags
 - Injects tracking scripts
@@ -72,7 +74,7 @@ Phase 12:  Wrap-up — Credential summary + optional Google Ads sitelinks
 - Adds a canonical redirect to the worker for UTM safety
 
 **You do:**
-- Build your lander files in claude.ai/design and put them in a folder
+- Build your pages with build-lander-laa (or in Claude Design)
 - Confirm the file mapping before Claude copies them
 - Copy the GHL form embed code and paste it if it's missing (Phase 4)
 - Provide the favicon file (Phase 8)
@@ -125,7 +127,9 @@ After deployment, the reports dashboard lives at:
 https://[domain]/reports
 ```
 
-Login: the username and password you chose during intake.
+Login: the username you chose and the password Claude generated (shown in the Phase 12 summary).
+
+To preview a specific variant at any time: `https://[domain]/a` or `https://[domain]/b`.
 
 The dashboard shows:
 - Pageviews by variant (A vs. B)
@@ -146,4 +150,6 @@ The dashboard shows:
 | Pageview not recording on repeat visits | Normal — pageviews only log on first visit (new cookie). Use incognito to test. |
 | Split test cookie not present | Check DevTools > Application > Cookies after a fresh incognito visit |
 | Domain stuck on Pending | A DNS record is probably missing — check both the apex CNAME and www CNAME in the Cloudflare DNS tab |
+| Lost the reports password | Make a new one: `wrangler pages secret put REPORTS_PASS --project-name lander-[slug]`, then redeploy |
+| `/README.md` or `/wrangler.toml` opens on the live site | The repo came from an old template. Ask Claude to add the "Internal files" 404 block from the current laa-lander-template `_worker.js` |
 | Reports page shows "DB not configured" | The D1 binding wasn't wired up via API — re-run the `curl PATCH` command in Phase 6 |

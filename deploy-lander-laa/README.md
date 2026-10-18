@@ -1,69 +1,46 @@
-# deploy-lander — v1.2.0
+# deploy-lander-laa v4.1.0
 
-Full end-to-end deployment skill for DJM client landing pages. Handles template customization, GitHub repo creation, Cloudflare Pages + D1, GHL form injection, split-test verification, UTM tracking, call click tracking, and domain setup.
+Puts a landing page live, end to end: GitHub repo, Cloudflare Pages and D1, the 50/50 split test, GHL form, tracking scripts, optional Meta Conversions API, the reports dashboard, and a custom domain.
 
-## Installation
+Start it with "deploy my lander" or `/deploy-lander-laa`. See `WORKFLOW.md` for the full walkthrough.
 
-1. Download `deploy-lander-v1.2.0.zip`
-2. In Claude Code, run:
-   ```
-   /install-skill deploy-lander-v1.2.0.zip
-   ```
-3. Follow the prompts
+## Three ways to start
 
-## Prerequisites
+- **From build-lander-laa:** give it the folder build-lander-laa made. Most questions are already answered.
+- **From your own files:** a folder with your Variant A, Variant B, and thank-you HTML (from Claude Design or anywhere else).
+- **Clone:** copy a lander that's already live onto a new ad channel, with its own form, phone number, tracking, and reports.
 
-These tools must be installed and authenticated on your machine before using the skill:
+## What you need
 
 | Tool | Check | Install |
 |------|-------|---------|
-| GitHub CLI | `gh auth status` | [cli.github.com](https://cli.github.com) |
-| Wrangler (Cloudflare) | `wrangler whoami` | `npm install -g wrangler` |
-| Python 3 | `python3 --version` | [python.org](https://python.org) |
+| GitHub CLI | `gh auth status` | [cli.github.com](https://cli.github.com), then `gh auth login` |
+| Wrangler (Cloudflare) | `wrangler whoami` | `npm install -g wrangler`, then `wrangler login` |
+| Python 3 | `python3 --version` | Mac: `xcode-select --install`. Windows: [python.org](https://python.org) |
 
-You also need:
-- Access to the **strive-marketing** GitHub org
-- Wrangler authenticated to the **Strive Marketing** Cloudflare account
-- Access to the client's GHL sub-account
+Plus access to the GoHighLevel sub-account the form lives in (if you use GHL).
 
-## Dependencies
-
-No Python packages or Node modules required. The skill uses only Python standard library and shell commands.
-
-## Usage
+## Files
 
 ```
-/deploy-lander
+deploy-lander-laa/
+  SKILL.md                        the steps Claude follows
+  WORKFLOW.md                     plain-English walkthrough (start here)
+  README.md                       this file
+  references/
+    clone-mode.md                 cloning a live lander for a new ad channel
+    ghl-steps.md                  getting the form embed, setting the redirect URL
+    cloudflare-steps.md           domain purchase, DNS, split test check
+    meta-capi.md                  optional Meta Conversions API setup
 ```
 
-Or say: "Deploy a lander for [client name]"
+## What changed in v4.1.0
 
-Claude will collect intake info and walk you through all 12 phases.
-
-## What's Included
-
-```
-deploy-lander/
-├── SKILL.md          — skill definition and phase-by-phase instructions
-├── WORKFLOW.md       — usage guide (start here)
-├── README.md         — this file
-├── references/
-│   ├── intake.md     — intake form template
-│   ├── ghl-steps.md  — GHL form embed and redirect instructions
-│   └── cloudflare-steps.md — Cloudflare domain and split-test steps
-└── assets/
-    └── templates/
-        └── djm/
-            ├── porta-potty/     — porta potty lander template
-            └── dumpster-rental/ — dumpster rental lander template
-```
-
-## What Changed in v1.2.0
-
-- Fixed GHL merge tag: `{{contact.first_name}}` corrected to `{{contact.name}}`
-- Phase 2 script now adds `data-tel-link` to all call buttons automatically (fixes call click tracking)
-- Phase 7 simplified — no longer tries to verify merge tags before GHL redirect is set
-- Phase 8 now includes a full verification test: incognito window, UTM test URL with all tracked parameters, reports dashboard check
-- Phase 11 now requires repeating the full verification test after switching to the custom domain
-- Added CRITICAL warning in GHL steps about not dropping the query string from the redirect URL
-- Generated WORKFLOW.md with troubleshooting guide
+- New Phase 0: start from a build-lander-laa folder, your own files, or a clone of a live lander
+- Clone mode added (`references/clone-mode.md`)
+- The reports password is now generated for you (random, unique per lander) and never written into any file
+- Reports dashboard "Preview A" link fixed: now `/a` (was `/?ab_variant=a`, which didn't force Variant A)
+- Image checks accept `assets/...` paths and confirm each file exists
+- After deploy, checks that `README.md`, `wrangler.toml`, and `schema.sql` return 404, and that no password text is in any `.md` file
+- Cloudflare login token is found on Mac, Windows, and Linux
+- Meta CAPI call test now says to call a pool tracking number from a different phone than the one it forwards to
