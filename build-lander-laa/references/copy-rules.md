@@ -34,7 +34,12 @@ Templates get shared between services, so their words often belong to another on
 | Septic | Free Estimate or Free Quote | pumping, inspection, repair, installation, tank, drain field, technician, service visit | We Review Your Request, We Schedule Your Service Visit, We Get the Job Done | delivery, units, remodel, project crew |
 | Plumbing | Free Estimate (or their service-call offer) | plumber, technician, diagnose, upfront pricing, repair | We Review Your Request, A Plumber Contacts You, We Fix the Problem | delivery, units |
 | Family Law | Free Consultation (only as the firm states it) | attorney, case, consultation, confidential, representation | We Review Your Inquiry, An Attorney Reaches Out, Your Consultation | quote, estimate, job, project, crew, service visit |
+| Bathroom Remodel | Free Estimate or Free In-Home Consultation | design consultation, remodel, installation, project, crew, warranty | We Review Your Request, Free In-Home Design Consultation, We Install Your New Bathroom | delivery, units, service call, technician |
+| Dental | Free Consultation or New Patient Special (only as the practice offers it) | dentist, appointment, exam, cleaning, treatment, insurance | We Review Your Request, We Call to Schedule Your Visit, Your Appointment | quote, estimate, job, project, crew, technician, delivery |
+| Rug Cleaning | Free Quote | pickup, cleaning, drying, return delivery, in-home cleaning | We Review Your Request, We Confirm Pickup or Your Cleaning Visit, Clean Rugs Back Home | assessment, project, crew, remodel, installation |
 | Anything else | Whatever the business offers | The business's own words from its website | Review, Contact, Do the Work, in their words | Words from another service |
+
+**Dental and law pages:** no promises about results ("pain-free", "guaranteed outcome", "best dentist in town"), prices only as the practice states them, and the doctor's or attorney's credentials only as the practice or firm lists them.
 
 The thank-you hero button says "Need It Sooner? Call [phone]" for every service except Family Law, which says "Need to Talk Sooner? Call [phone]".
 
@@ -67,7 +72,7 @@ Reviews can come from **Google, Yelp, Angi (formerly Angie's List), HomeAdvisor 
 - Leave off any platform with a weak rating or only a handful of reviews.
 
 **Choosing the six cards**
-- Six reviews, quoted word for word. Five-star first, then the longest and most specific. Prefer reviews about this page's service.
+- Six reviews, quoted word for word. The LAA templates ship with three static cards. Fill those and add three more using the exact same card markup so there are six. Delete any review widget slot (we don't use review widgets). Five-star first, then the longest and most specific. Prefer reviews about this page's service.
 - Mix platforms when they have good reviews, but keep Google as at least half unless the business barely uses Google.
 - Skip one-liners, reviews with no text, anything mentioning a competitor or reading like spam, and reviews older than about three years when newer ones exist.
 - Names: first name plus last initial ("John S."). Business names stay as written. If a platform only shows a first name or initials, use what it shows.

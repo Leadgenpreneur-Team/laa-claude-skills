@@ -80,6 +80,25 @@ def main(page, out):
         uri = data_uri(m.group(1))
         return f'url("{uri}")' if uri else m.group(0)
 
+    # Local stylesheets (e.g. assets/styles.css) -> inline <style>, since the artifact is one file
+    def sub_css(m):
+        href = m.group(1)
+        if href.startswith(("http", "//")):
+            return m.group(0)
+        p = os.path.join(folder, href.lstrip("/"))
+        if not os.path.exists(p):
+            missing.append(href)
+            return m.group(0)
+        css = open(p, encoding="utf-8").read()
+        css_dir = os.path.dirname(href.lstrip("/"))
+        # make url() refs inside the stylesheet relative to the page, so they inline below
+        css = re.sub(r"url\(['\"]?(?!data:|https?:|//|/)([^)'\"]+)['\"]?\)",
+                     lambda u: f'url("{os.path.normpath(os.path.join(css_dir, u.group(1)))}")', css)
+        return f"<style>\n{css}\n</style>"
+
+    src = re.sub(r'<link[^>]+rel="stylesheet"[^>]*href="([^"]+\.css)"[^>]*>', sub_css, src, flags=re.I)
+    src = re.sub(r'<link[^>]+href="([^"]+\.css)"[^>]*rel="stylesheet"[^>]*>', sub_css, src, flags=re.I)
+
     # GHL form iframe (+ its embed script) -> placeholder
     def sub_form(m):
         h = re.search(r'height:\s*(\d+)', m.group(0)) or re.search(r'data-height="(\d+)"', m.group(0))

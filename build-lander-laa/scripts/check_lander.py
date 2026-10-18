@@ -14,11 +14,13 @@ import re
 import sys
 
 PLACEHOLDERS = [
-    r"\[[A-Z][A-Z0-9 _/\-]*\]", r"\[N\]", r"\[XX\]", r"Goes Here", r"Lorem", r"ipsum",
+    r"\[[^\[\]\n]{1,80}\]", r"Goes Here", r"Lorem", r"ipsum",
     r"123-456-7890", r"1234567890", r"\(555\) ?555-5555", r"Your [A-Z][a-z]+(?: [A-Z][a-z]+)? Co\b",
-    r"City, ST\b", r"ghl-embed-slot", r"your company", r"Paste your form", r"logo-ph",
-    r"__bundler",
+    r"City, ST\b", r'class="[^"]*\bghl-embed-slot', r"your company", r"Paste your form", r'class="[^"]*\blogo-ph',
+    r"__bundler", r"widget/form/XXXX", r"GHL Embed Slot", r"lead-form embed", r'class="[^"]*\bcert-logo-ph',
+    r"Paste your", r"Drop in a real", r"email@business\.com",
 ]
+SOURCE_ONLY = {r'class="[^"]*\bghl-embed-slot', r"__bundler", r'class="[^"]*\blogo-ph', r"widget/form/XXXX", r'class="[^"]*\bcert-logo-ph'}
 
 AVOID = {
     "dumpster": ["assessment", "technician", "estimate visit"],
@@ -27,9 +29,12 @@ AVOID = {
     "septic": ["delivery", "units", "remodel"],
     "plumbing": ["delivery", "units"],
     "law": ["quote", "estimate", "crew", "service visit"],
+    "bathroom": ["delivery", "units", "service call", "technician"],
+    "dental": ["quote", "estimate", "job", "project", "crew", "technician", "delivery"],
+    "rug-cleaning": ["assessment", "project", "crew", "remodel", "installation"],
 }
 
-PAGES = ["index-a.html", "index-b.html", "thank-you.html"]
+PAGES = ["index-a.html", "index-b.html", "thank-you.html", "privacy.html", "terms.html"]
 
 
 def visible_text(src):
@@ -66,7 +71,7 @@ def main():
         text = visible_text(src)
 
         for pat in PLACEHOLDERS:
-            for m in set(re.findall(pat, src if pat in (r"ghl-embed-slot", r"__bundler", r"logo-ph") else text, flags=re.I)):
+            for m in set(re.findall(pat, src if pat in SOURCE_ONLY else text, flags=re.I)):
                 m = m if isinstance(m, str) else m[0]
                 fails.append(f"{page}: leftover placeholder text matching {pat!r}: {m!r}")
 
@@ -78,7 +83,8 @@ def main():
             if digits(href) != want:
                 fails.append(f"{page}: tel link goes to {href}, expected {a.phone}")
         tel_count = len(re.findall(r'href="tel:', src))
-        if tel_count == 0:
+        legal = page in ("privacy.html", "terms.html")
+        if tel_count == 0 and not legal:
             fails.append(f"{page}: no tel: links at all")
 
         # Visible phone numbers that aren't links
@@ -88,6 +94,10 @@ def main():
                 fails.append(f"{page}: visible phone number {num} doesn't match {a.phone}")
             elif num.strip() not in linked:
                 warns.append(f"{page}: {num} appears as text; make sure every instance is inside a tel: link")
+
+        for css in re.findall(r'<link[^>]+href="([^"]+\.css)"', src, flags=re.I):
+            if not css.startswith(("http", "//")) and not os.path.exists(os.path.join(a.folder, css.lstrip("/"))):
+                fails.append(f"{page}: stylesheet {css} is missing from the folder")
 
         # Images / CSS urls must resolve inside assets/
         refs = re.findall(r'(?:src|href)="([^"]+\.(?:jpe?g|png|webp|gif|svg|ico))"', src, flags=re.I)
@@ -102,6 +112,10 @@ def main():
                 fails.append(f"{page}: image {ref} is not inside assets/")
             elif not os.path.exists(os.path.join(a.folder, rel)):
                 fails.append(f"{page}: image {ref} is missing from the folder")
+
+        if legal:
+            print(f"checked {page}")
+            continue
 
         if page.startswith("index"):
             if not re.search(r'leadconnectorhq\.com/widget/form/', src):

@@ -30,8 +30,16 @@ def unbundle(path):
     html = open(path, encoding="utf-8").read()
     tpl = re.search(r'<script type="__bundler/template">([\s\S]*?)</script>', html)
     if not tpl:
-        print(f"{path}: plain HTML, nothing to do")
-        return True
+        # Plain HTML, but Claude Design sometimes leaves a thumbnail <template> behind.
+        # deploy-lander-laa's bundle check trips on it, so remove it.
+        cleaned, n = re.subn(r'<template id="__bundler_thumbnail"[\s\S]*?</template>\s*', "", html)
+        if n:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(cleaned)
+            print(f"{path}: plain HTML, removed {n} leftover Claude Design thumbnail block(s)")
+        else:
+            print(f"{path}: plain HTML, nothing to do")
+        return "__bundler" not in cleaned
     man = re.search(r'<script type="__bundler/manifest">([\s\S]*?)</script>', html)
     try:
         page = json.loads(tpl.group(1).strip())
