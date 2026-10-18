@@ -90,6 +90,7 @@ ls "[PROVIDED_FOLDER_PATH]"/*.html
 Identify which file is which based on the filename:
 - File with "variant b", "variant-b", "v2", or "- b" (case-insensitive) → `index-b.html`
 - File with "thank you" or "thank-you" (case-insensitive) → `thank-you.html`
+- `privacy.html` and `terms.html` → copied as they are (legal pages, not variants)
 - The remaining HTML file → `index-a.html`
 
 Confirm the mapping with the user before copying:
@@ -107,6 +108,11 @@ Once confirmed:
 cp "[PROVIDED_FOLDER_PATH]/[VARIANT_A_FILENAME]" "$WORK_DIR/index-a.html"
 cp "[PROVIDED_FOLDER_PATH]/[VARIANT_B_FILENAME]" "$WORK_DIR/index-b.html"
 cp "[PROVIDED_FOLDER_PATH]/[THANK_YOU_FILENAME]" "$WORK_DIR/thank-you.html"
+
+# Legal pages (build-lander-laa folders and the LAA template pack include them)
+for f in privacy.html terms.html; do
+  [ -f "[PROVIDED_FOLDER_PATH]/$f" ] && cp "[PROVIDED_FOLDER_PATH]/$f" "$WORK_DIR/$f"
+done
 
 # Copy images: the folder's assets/ subfolder (build-lander-laa and Claude Design exports)
 # plus any loose image files sitting next to the pages. Notes (.md) are never copied.
@@ -131,7 +137,20 @@ grep -c "__bundler_loading\|__bundler_thumbnail" "$WORK_DIR/index-b.html" || tru
 grep -c "__bundler_loading\|__bundler_thumbnail" "$WORK_DIR/thank-you.html" || true
 ```
 
-If any file returns `1` or higher, strip it using Node.js:
+If a file has only a leftover thumbnail block (`__bundler_thumbnail`) and no `__bundler/template` script, it's already plain HTML. Just remove the block:
+
+```bash
+for f in index-a.html index-b.html thank-you.html; do
+  grep -q '__bundler/template' "$WORK_DIR/$f" || python3 - "$WORK_DIR/$f" <<'PY'
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+s2 = re.sub(r'<template id="__bundler_thumbnail"[\s\S]*?</template>\s*', '', s)
+if s2 != s: open(p, 'w').write(s2); print(p, 'thumbnail block removed')
+PY
+done
+```
+
+If any file still returns `1` or higher, strip it using Node.js:
 
 ```bash
 node << 'NODESCRIPT'
@@ -361,6 +380,7 @@ PYEOF
 ```bash
 # Copy all customized files in (must be run from $REPO_DIR)
 cp $WORK_DIR/index-a.html $WORK_DIR/index-b.html $WORK_DIR/thank-you.html .
+for f in privacy.html terms.html; do [ -f "$WORK_DIR/$f" ] && cp "$WORK_DIR/$f" .; done
 
 # Copy assets folder if it exists (bundler-stripped images land here)
 if [ -d "$WORK_DIR/assets" ] && [ "$(ls -A $WORK_DIR/assets)" ]; then
@@ -507,7 +527,7 @@ Verify these tags are in `<head>` of **all four files** — add if missing:
 - `<meta name="robots" content="noindex, nofollow">`
 - `<link rel="icon" href="/favicon.png">` (adjust extension as needed)
 
-The four files are: `index-a.html`, `index-b.html`, `thank-you.html`, `reports.html`
+The four files are: `index-a.html`, `index-b.html`, `thank-you.html`, `reports.html` (plus `privacy.html` and `terms.html` if the lander has them, which get the same two tags)
 
 **Update SEO title tags:**
 

@@ -56,7 +56,7 @@ Load `references/templates.md`. In order:
 2. **A page the person likes** (their old lander, a competitor's page, or a design they made in Claude Design). Use its layout, not its words or photos.
 3. **Build from the standard layout** in `references/page-layout.md`. This always works, so never stop because there's no template.
 
-If the starting file is a Claude Design bundle (contains `<script type="__bundler/template">`), run:
+Run this on every page you copy in, bundle or not. It unpacks Claude Design bundles and removes leftover Claude Design thumbnail blocks that would trip up deploy-lander-laa:
 ```bash
 python3 "$SKILL_DIR/scripts/unbundle.py" "<file>.html"
 ```
@@ -98,12 +98,15 @@ Output folder (create it, ask if the person wants it somewhere else):
 ~/Landers/[Business Name] [Service]/
   index-a.html
   thank-you.html
+  privacy.html       filled from the template pack's privacy page
+  terms.html         filled from the template pack's terms page
   assets/            every image, logo, and map
   lander-notes.md    sources, rating, phone, open questions (never deployed)
 ```
 
 - Never overwrite an existing lander folder. If the name is taken, ask, or add a suffix.
 - Every image goes in `assets/` and is referenced as `assets/filename.jpg`.
+- Fill `privacy.html` and `terms.html` and turn on the footer links to them (the "Legal pages" part of the "Starting designs" reference).
 - If there's no GHL form yet, keep the template's form slot and add the comment `<!-- GHL FORM EMBED -->` inside it.
 - Put the comment blocks `<!-- TRACKING SCRIPTS (HEAD) -->` (in `<head>`), `<!-- TRACKING SCRIPTS (BODY) -->` (right after `<body>`), and on the thank-you page `<!-- CONVERSION TRACKING -->` (in `<head>`) on every page if the starting design doesn't already have them. deploy-lander-laa pastes tracking code there.
 
@@ -112,7 +115,7 @@ Then run the checks and fix everything they flag:
 python3 "$SKILL_DIR/scripts/check_lander.py" "<folder>" --phone "<phone>" [--service <type>]
 python3 "$SKILL_DIR/scripts/render_check.py" "<folder>"     # skips itself if Playwright isn't installed
 ```
-`--service` is one of `dumpster`, `porta-potty`, `septic`, `plumbing`, `home-services`, `law` (leave it off for anything else, and check the wording yourself against the table in copy-rules.md).
+`--service` is one of `dumpster`, `porta-potty`, `septic`, `plumbing`, `home-services`, `law`, `bathroom`, `dental`, `rug-cleaning` (leave it off for anything else, and check the wording yourself against the table in copy-rules.md).
 
 ---
 
