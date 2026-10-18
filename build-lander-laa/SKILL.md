@@ -147,9 +147,9 @@ Tell the person, briefly:
 1. Which starting design you used.
 2. Any fact you couldn't confirm, and every section you removed for lack of a source.
 3. Source conflicts and which one won.
-4. The Google rating and count you used, where and when you read them.
+4. The ratings and counts you used for each review site, where and when you read them.
 5. What Variant B tests.
-6. Anything still missing (GHL form, logo, photos).
+6. Anything still missing (GHL form, logo, photos, map).
 
 Make sure `lander-notes.md` ends with the handoff block from `references/intake.md` → "Handoff block", filled in.
 
