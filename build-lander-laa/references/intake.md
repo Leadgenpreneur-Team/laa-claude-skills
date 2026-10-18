@@ -22,6 +22,8 @@ After Phase 3 research, ask only for what you still don't know. Typical items:
 | Phone number for calls | "What number should calls from this page ring? If you'll use a call tracking number, give me that one." | The number on the website, flagged |
 | Offer | Propose one: "Free Quote" (rentals), "Free Estimate" (home services), "Free Consultation" (law, only as the firm offers it). "Want to use that, or something else (like $50 off)?" | The proposal |
 | Google Business Profile | "I found this Google listing: [name, address, rating]. Is that the right one?" If several match, show them and ask. | Ask to paste 6 reviews |
+| Other review sites | "Do they have reviews anywhere else, like Yelp, Angi, HomeAdvisor, or Facebook? Paste the links if so." Mention any you already found. | Google only |
+| Service area map | "Do you have a service area map image? If not, the page lists the towns without a map." | Towns only, no map |
 | Photos | "Do you have a folder of real job photos? Real photos beat stock. If not, I'll use photos from the website." | Website photos |
 | Logo | Usually from the website. Ask only if you can't find a clean one. | Business name as text |
 | Brand color | Pull from the website. Ask only if unclear. | Website's main button color |

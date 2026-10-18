@@ -11,14 +11,14 @@ A proven single-service local lander. Build it as one HTML file with a `<style>`
    - Subhead: one or two sentences, what they get and why this business.
    - 3 or 4 short proof bullets (only sourced facts).
    - Two buttons: **Call** (`.btn .btn-call`, brightest accent color) and **Get [Offer]** (`.btn .btn-quote`, scrolls to the form).
-   - Trust row: "★ 4.9 From 318+ Google Reviews" plus one or two real proof points.
+   - Trust row: "★ 4.9 From 318+ Google Reviews" (the platform with the most reviews) plus one or two real proof points, such as a second platform's rating.
    - The form sits in the hero on desktop (right column) and right below the hero on mobile.
 3. **Form block:** `id="quote"`, a short heading ("Get Your Free Quote in 2 Minutes"), then the GHL form embed or the `<!-- GHL FORM EMBED -->` slot.
 4. **Problems or reasons to call:** 3 to 6 cards, specific to this service.
 5. **How it works:** 3 or 4 steps (wording from the service table in copy-rules.md).
-6. **Reviews:** rating line plus six review cards (name, stars, text, Google mark).
+6. **Reviews:** rating line plus six review cards (name, stars, text, and where the review came from: Google, Yelp, Angi, HomeAdvisor, or Facebook).
 7. **Why choose us:** 4 benefits, sourced only.
-8. **Service area:** 10 to 14 towns weighted to the biggest ones, plus a map image if available.
+8. **Service area:** 10 to 14 towns weighted to the biggest ones, plus the person's map image if they have one. No placeholder box if they don't.
 9. **FAQ:** 4 to 6 questions answered only from sourced facts. Use `<details>` so it works without JavaScript.
 10. **Final CTA band:** headline, call button, quote button.
 11. **Footer:** business name, city, phone link, © year. No links away from the page.

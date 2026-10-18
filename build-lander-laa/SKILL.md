@@ -1,6 +1,6 @@
 ---
 name: build-lander-laa
-description: "Builds a finished, ready-to-deploy landing page for a local service business: Variant A, Variant B, and a thank-you page, written from the business's real website and Google reviews. Works for agency owners building for a client and for business owners building their own page, with or without kickoff notes. Lets the person preview and request changes (in the browser, as a shareable Claude artifact, or hands-on in Claude Design) before handing off to deploy-lander-laa. Triggers: build lander, build a landing page, make a lander, make my landing page, new lander for client, /build-lander-laa, /build-lander."
+description: "Builds a finished, ready-to-deploy landing page for a local service business: Variant A, Variant B, and a thank-you page, written from the business's real website and its reviews (Google, Yelp, Angi, HomeAdvisor, Facebook). Works for agency owners building for a client and for business owners building their own page, with or without kickoff notes. Lets the person preview and request changes (in the browser, as a shareable Claude artifact, or hands-on in Claude Design) before handing off to deploy-lander-laa. Triggers: build lander, build a landing page, make a lander, make my landing page, new lander for client, /build-lander-laa, /build-lander."
 version: 1.0.0
 ---
 
@@ -73,7 +73,7 @@ Use web search and web fetch. Never invent facts.
 1. What the person told you in this chat, plus any notes or survey they gave you.
 2. The business's own website.
 3. The Google Business Profile.
-4. Anything else online (old lander, Yelp, directories). Only to fill gaps, and flag every fact that came from here.
+4. Anything else online (old lander, directories). Only to fill gaps, and flag every fact that came from here.
 
 Collect: business name as customers know it, phone, city and service area, years in business, licensing and insurance, warranties or guarantees, what's special about how they do **this service**, hours, and emergency or same-day availability.
 
@@ -81,7 +81,9 @@ Collect: business name as customers know it, phone, city and service area, years
 - If sources disagree, use the higher one and note the conflict for the report.
 - Ignore the business's other services. Every line on the page is about this one service.
 
-**Reviews:** load `references/copy-rules.md` → "Reviews". Use the live Google rating and count, and quote six real reviews. If you can't reach the profile, ask the person to paste 6 reviews and the current rating and count.
+**Reviews:** load `references/copy-rules.md` → "Reviews" and follow it. Check Google plus Yelp, Angi, HomeAdvisor, and Facebook. Each platform's rating is shown separately (never combined), and six real reviews are quoted word for word with the correct source on each card. If a profile can't be read, ask the person to paste that platform's reviews, rating, and count.
+
+**Service area map:** this skill doesn't make map images. If the person has one (or makes one with the service area map prompt from the Skool classroom), put it in `assets/` and use it. Otherwise keep the town list and remove the map slot cleanly, with no empty box left behind.
 
 **Photos:** use the person's own photos first (ask for a folder). Then photos from the business's website (download them into `assets/`, never hotlink). Only use stock photos if the person says that's OK, and say which ones are stock.
 

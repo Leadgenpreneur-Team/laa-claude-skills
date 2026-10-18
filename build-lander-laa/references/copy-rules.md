@@ -53,15 +53,32 @@ The thank-you hero button says "Need It Sooner? Call [phone]" for every service 
 
 ## Reviews
 
-- Find the right Google Business Profile: its phone, address, and website must match the business. If more than one listing could match, show the person the options (name, address, rating, count) and ask.
-- Use the **current** rating and review count from the live profile. If you can only reach a third-party copy, say so and give the date.
-- Show the rating with a plus sign and the exact count, in both places on the page (hero trust row and above the review cards): "4.9 From 318+ Google Reviews" and "4.9 Average Rating From 318+ Google Reviews". Never round, never "hundreds of".
-- Quote **six** reviews word for word. Five-star first, longest and most specific first. Skip one-liners, reviews with no text, anything mentioning a competitor or reading like spam.
-- Names: first name plus last initial ("John S."). Business names stay as written.
-- Prefer reviews about this service. If you have to use reviews about another service, flag it.
-- Keep only the Google (or Yelp) mark that matches where each review really came from.
-- If you can't reach the reviews at all, ask the person to paste six reviews plus the rating and count. Never write reviews yourself.
-- Record the rating, count, source, and date in `lander-notes.md`.
+Reviews can come from **Google, Yelp, Angi (formerly Angie's List), HomeAdvisor (now part of Angi), and Facebook**. Use every platform the business actually has reviews on.
+
+**Finding the profiles**
+- Google first. Its phone, address, and website must match the business. If more than one listing could match, show the person the options (name, address, rating, count) and ask.
+- Then search for the business on Yelp, Angi, HomeAdvisor, and Facebook, and ask the person in the same message: "Do they have reviews anywhere else, like Yelp, Angi, HomeAdvisor, or Facebook? Paste the links if so." Check each profile is the same business (name, city, phone) before using it.
+- Review sites often block automated reading. If you can't read a profile, ask the person to paste the reviews plus that platform's current rating and count. Their paste counts as the source. Never write, edit, or "clean up" a review beyond fixing obvious line breaks.
+
+**Rating lines**
+- Each platform's rating is stated separately, with its exact count and a plus sign. Never average or add ratings across platforms, and never round.
+- Lead with the platform that has the most reviews (usually Google): "4.9 From 318+ Google Reviews". Fill both rating slots (hero trust row and above the review cards) with that one.
+- If a second platform is strong (4.5 or higher with 20+ reviews), add it as its own short line or badge under the first, e.g. "4.8 on Yelp (52+ Reviews)" or "Angi Super Service Award" (awards only if the profile shows them, with the year).
+- Leave off any platform with a weak rating or only a handful of reviews.
+
+**Choosing the six cards**
+- Six reviews, quoted word for word. Five-star first, then the longest and most specific. Prefer reviews about this page's service.
+- Mix platforms when they have good reviews, but keep Google as at least half unless the business barely uses Google.
+- Skip one-liners, reviews with no text, anything mentioning a competitor or reading like spam, and reviews older than about three years when newer ones exist.
+- Names: first name plus last initial ("John S."). Business names stay as written. If a platform only shows a first name or initials, use what it shows.
+- If you have to use a review about another service, flag it in the report.
+
+**Source marks on each card**
+- Every card shows where that review really came from. Never guess, and never label a review with a platform it didn't come from.
+- If the template already has a mark for that platform (e.g. the Google or Yelp icon), use it and delete the unused ones.
+- If it doesn't (Angi, HomeAdvisor, Facebook), use a plain text label in the same spot styled like the template's small text: "Review on Angi", "Review on HomeAdvisor", "Review on Facebook". Don't draw or download another company's logo.
+
+**Record it.** In `lander-notes.md`, list each platform used: profile link, rating, count, date read, and whether you read it or the person pasted it. edit-lander-laa uses this when the numbers are refreshed later.
 
 ## Thank-you page
 
