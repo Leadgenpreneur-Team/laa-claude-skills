@@ -1,12 +1,12 @@
 ---
 name: deploy-lander-laa
-description: "Deploys a client landing page end-to-end for agency owners. Starts from finished HTML files built in claude.ai/design. Handles GitHub repo creation, Cloudflare Pages + D1 + env vars, GHL form injection, split-test setup, Meta tracking (pixel-only or full CAPI), tracking scripts, SEO/favicon, automated domain connection, and Google Ads sitelinks. Triggers: deploy lander, deploy my lander, set up landing page, launch client lander, deploy lander for client, /deploy-lander-laa, /deploy-lander."
-version: 4.0.0
+description: "Deploys a landing page end-to-end for agency owners and business owners. Starts from a folder made by build-lander-laa, finished HTML files from Claude Design, or a clone of a live lander for a new ad channel. Handles GitHub repo creation, Cloudflare Pages + D1 + env vars, GHL form injection, split-test setup, Meta tracking (pixel-only or full CAPI), tracking scripts, SEO/favicon, automated domain connection, and Google Ads sitelinks. Triggers: deploy lander, deploy my lander, clone lander, duplicate lander for google/facebook, set up landing page, launch client lander, deploy lander for client, /deploy-lander-laa, /deploy-lander."
+version: 4.1.0
 ---
 
 # deploy-lander-laa
 
-Deployment engine for client landing pages. Build your lander in claude.ai/design first — this skill handles everything after that: GitHub, Cloudflare, GHL form, split testing, tracking, and domain connection.
+Deployment engine for landing pages. Build the pages first (with **build-lander-laa**, or in Claude Design). This skill handles everything after that: GitHub, Cloudflare, GHL form, split testing, tracking, and domain connection.
 
 ## Prerequisites
 
@@ -29,6 +29,23 @@ You also need access to the client's GHL sub-account before Phase 4.
 
 ---
 
+## Phase 0: Where the pages come from
+
+Ask (skip the question if the person already said, e.g. build-lander-laa handed off a folder):
+
+> "Where are the pages coming from?
+> - **build-lander-laa folder**: you just built them with build-lander-laa (or have the folder it made)
+> - **My own files**: HTML files you made in Claude Design or elsewhere
+> - **Clone**: copy a lander that's already live onto a new ad channel (e.g. make a Google Ads version of your Facebook lander, with its own form, tracking number, and reports)"
+
+- **build-lander-laa folder** → read the `## Handoff to deploy-lander-laa` block at the end of `lander-notes.md` in that folder. Pre-fill every intake field it covers (business name, suggested slug, phone, Variant A and B descriptions, folder path) and only ask for the rest in Phase 1. Its pages are already named `index-a.html`, `index-b.html`, `thank-you.html`, so the Phase 2 mapping is automatic (still show it).
+- **My own files** → run Phase 1 and Phase 2 below as written.
+- **Clone** → run Phase 1 and Phase 2 from [`references/clone-mode.md`](references/clone-mode.md) **instead of** Phase 1 and Phase 2 below, then come back here at **Phase 3** and run every phase from there to the end. The clone gets its own repo, Pages project, D1 database, and secrets. It never shares anything with the source lander.
+
+If they don't have pages yet: "No problem. Run build-lander-laa first (say 'build a lander'), and it will hand the folder back here when you're happy with it."
+
+---
+
 ## Phase 1: Intake
 
 Ask these questions up front. All are required except domain (can be TBD) and agency logo (optional).
@@ -36,14 +53,14 @@ Ask these questions up front. All are required except domain (can be TBD) and ag
 | Field | Notes |
 |---|---|
 | GitHub username or org | Where client repos will be created. Your GitHub username appears in your profile URL: `github.com/[username]`. If using an org, use the org name shown at `github.com/orgs/[orgname]`. When unsure, use your personal username. |
-| HTML folder path | Full path to the folder containing your lander files. Put your Variant A file, Variant B file, and thank-you page in it — you don't need to rename them first. Claude will identify each one by filename and confirm before copying. |
+| HTML folder path | Full path to the folder containing your lander files (pre-filled for a build-lander-laa folder). Put your Variant A file, Variant B file, and thank-you page in it. You don't need to rename them first. Claude will identify each one by filename and confirm before copying. |
 | Client slug | Lowercase, hyphens only. Used for the GitHub repo name and Cloudflare project. If the client has multiple services, differentiate by service: `smith-landscaping` vs `smith-sprinkler-repair`. If it's their only service, keep it short: `smith-hvac`. |
 | Business name | Exact name as it should appear in the reports dashboard and commits. |
 | Phone number | Any format — used to verify call tracking attributes are present. |
 | Variant A description | Briefly describe what Variant A shows — e.g. "Original layout — hero + form above fold" or "Headline: Get a Free Quote Today". Appears in the reports dashboard for Round 1. |
 | Variant B description | What one thing does Variant B test vs Variant A? e.g. "New headline — 'Same-Day Service Available'". Appears in the reports dashboard. |
 | Reports username | Username to log in to the reports dashboard. Suggest `admin` or the client's first name. |
-| Reports password | User chooses any password. Suggest a `word+word+number` format (e.g. `greentruck42`). No dashes or plus signs — hard to distinguish when typing. There is no recovery option — they must save this. |
+| Reports password | **Don't ask. Claude generates it** in Phase 6 (`openssl rand -base64 24 \| tr -d '/+=' \| cut -c1-20`), unique per lander. Claude shows it once in Phase 12 and the person saves it in a password manager. It never goes in README.md or any file in the repo. |
 | Meta tracking level | Ask: "Will you be running Meta (Facebook/Instagram) ads for this client? If so, do you have — or plan to get — a Conversions API access token?" Three options: **Full CAPI** — they have both a Meta Pixel and a CAPI access token. **Pixel-only** — they have the Pixel but no access token. **No Meta** — no Meta ads at all. |
 | Domain name | Optional at this stage. Note it if they have one — needed at Phase 10. |
 | Agency logo URL | Optional. A hosted URL to your agency logo (PNG or SVG). Appears in the header of the client-facing reports dashboard. Leave blank to omit. |
@@ -91,15 +108,18 @@ cp "[PROVIDED_FOLDER_PATH]/[VARIANT_A_FILENAME]" "$WORK_DIR/index-a.html"
 cp "[PROVIDED_FOLDER_PATH]/[VARIANT_B_FILENAME]" "$WORK_DIR/index-b.html"
 cp "[PROVIDED_FOLDER_PATH]/[THANK_YOU_FILENAME]" "$WORK_DIR/thank-you.html"
 
-# Copy any non-HTML asset files from the folder
-for f in "[PROVIDED_FOLDER_PATH]"/*; do
-  [[ "$f" == *.html ]] && continue
-  cp "$f" "$WORK_DIR/assets/"
+# Copy images: the folder's assets/ subfolder (build-lander-laa and Claude Design exports)
+# plus any loose image files sitting next to the pages. Notes (.md) are never copied.
+if [ -d "[PROVIDED_FOLDER_PATH]/assets" ]; then
+  cp -R "[PROVIDED_FOLDER_PATH]/assets/." "$WORK_DIR/assets/"
+fi
+for f in "[PROVIDED_FOLDER_PATH]"/*.{jpg,jpeg,png,webp,gif,svg,ico}; do
+  [ -f "$f" ] && cp "$f" "$WORK_DIR/assets/"
 done
 ```
 
 If they do not have a thank-you page, stop here:
-> "You need a thank-you page before we can continue. Build one in claude.ai/design — it should confirm the visitor's form submission. Come back once you have it."
+> "You need a thank-you page before we can continue. build-lander-laa can make one that matches your lander (say 'build a thank-you page for this lander'), or build one in Claude Design. Come back once you have it."
 
 ### Step 2 — Bundler strip
 
@@ -137,7 +157,7 @@ function processFile(inputPath) {
     const ext = { 'image/png':'png','image/jpeg':'jpg','image/svg+xml':'svg','image/webp':'webp','font/woff2':'woff2','font/woff':'woff','font/ttf':'ttf','application/font-woff2':'woff2' }[entry.mime] || 'bin';
     const filename = `${uuid}.${ext}`;
     fs.writeFileSync(`${assetsDir}/${filename}`, data);
-    template = template.split(uuid).join(`/assets/${filename}`);
+    template = template.split(uuid).join(`assets/${filename}`);
   });
   fs.writeFileSync(inputPath, template, 'utf8');
   console.log('Stripped:', inputPath, '— extracted', Object.keys(manifest).length, 'assets');
@@ -156,6 +176,8 @@ grep -c "__bundler_loading\|__bundler_thumbnail" "$WORK_DIR/index-a.html" || tru
 grep -c "__bundler_loading\|__bundler_thumbnail" "$WORK_DIR/index-b.html" || true  # should be 0
 grep -c "__bundler_loading\|__bundler_thumbnail" "$WORK_DIR/thank-you.html" || true  # should be 0
 ```
+
+Images are referenced as relative `assets/...` paths, which work on every route (`/`, `/a`, `/b`, `/thank-you`).
 
 If auto-stripping fails, tell the user:
 
@@ -196,7 +218,7 @@ PYEOF
 
 **Check for missing referenced assets:**
 
-After bundler stripping, images and fonts are saved to `assets/` with UUID filenames. However, Claude Design sometimes references additional files by plain name (e.g. `src="logo.jpg"`) or as CSS `url()` values inside `<style>` blocks (e.g. `background-image: url('hero.jpg')`). Both will silently break on the live site.
+Pages may reference images as `assets/x.jpg`, `/assets/x.jpg`, a plain `x.jpg`, or a CSS `url()`. Every local reference must point inside `assets/` and the file must exist, or it breaks on the live site.
 
 ```python
 python3 - <<'PYEOF'
@@ -209,24 +231,19 @@ for fname in ['index-a.html', 'index-b.html', 'thank-you.html']:
     path = os.path.join(work_dir, fname)
     if not os.path.exists(path):
         continue
-    with open(path) as f:
-        html = f.read()
+    html = open(path).read()
+    refs  = re.findall(r'(?:src|href)="([^"]*\.(?:jpg|jpeg|png|svg|webp|gif|ico))"', html, re.I)
+    refs += re.findall(r"url\(['\"]?([^)'\"]*\.(?:jpg|jpeg|png|svg|webp|gif))['\"]?\)", html, re.I)
+    for ref in set(refs):
+        if ref.startswith(('http', 'data:', '//')):
+            continue
+        rel = ref.lstrip('/')
+        if not rel.startswith('assets/'):
+            missing.append(f'{fname}: {ref} is not inside assets/ (move the file into assets/ and update the reference)')
+        elif not os.path.exists(os.path.join(work_dir, rel)):
+            missing.append(f'{fname}: {ref} (file not found)')
 
-    for m in re.finditer(r'src="([^"]*\.(jpg|jpeg|png|svg|webp|gif))"', html, re.IGNORECASE):
-        ref = m.group(1)
-        if not (ref.startswith('/assets/') or ref.startswith('http') or ref.startswith('data:')):
-            missing.append(f'{fname}: src="{ref}"')
-
-    for m in re.finditer(r"url\(['\"]?([^)'\"]*\.(jpg|jpeg|png|svg|webp|gif))['\"]?\)", html, re.IGNORECASE):
-        ref = m.group(1)
-        if not (ref.startswith('/assets/') or ref.startswith('http') or ref.startswith('data:')):
-            missing.append(f'{fname}: url({ref})')
-
-if missing:
-    for item in missing:
-        print(f'MISSING: {item}')
-else:
-    print('No missing assets detected.')
+print('\n'.join('MISSING: ' + m for m in missing) or 'No missing assets detected.')
 PYEOF
 ```
 
@@ -241,7 +258,7 @@ grep -iEc "Your .* Co\.|City, ST|123-456-7890|1234567890|logo-ph|your company" "
 grep -iEc "Your .* Co\.|City, ST|123-456-7890|1234567890|logo-ph|your company" "$WORK_DIR/index-b.html" || true
 ```
 
-If any are found, tell the user to fix them in Claude Design before continuing.
+If any are found, fix them (or, for a build-lander-laa folder, re-run its `check_lander.py`) before continuing.
 
 ---
 
@@ -406,38 +423,25 @@ wrangler d1 execute lander-[SLUG]-db \
   --remote
 ```
 
-Generate a random token for the reports API (the user never needs to see or use this):
+Generate the reports password and API token and set every secret in **one** command, so the generated values never have to be retyped. Both values are random and unique to this lander, never based on the slug or business name. Fill in the bracketed values first:
+
 ```bash
+P=lander-[SLUG]
+REPORTS_PASS=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-20)
 REPORTS_TOKEN=$(openssl rand -hex 16)
-echo "Reports token: $REPORTS_TOKEN"
+printf '%s' "[REPORTS_USERNAME]"   | wrangler pages secret put REPORTS_USER  --project-name $P
+printf '%s' "$REPORTS_PASS"        | wrangler pages secret put REPORTS_PASS  --project-name $P
+printf '%s' "$REPORTS_TOKEN"       | wrangler pages secret put REPORTS_TOKEN --project-name $P
+printf '%s' "[BUSINESS NAME]"      | wrangler pages secret put PROJECT_NAME  --project-name $P
+printf '%s' "[SLUG]"               | wrangler pages secret put PROJECT_SLUG  --project-name $P
+printf '%s' "/a"                   | wrangler pages secret put VARIANT_A_URL --project-name $P
+printf '%s' "/b"                   | wrangler pages secret put VARIANT_B_URL --project-name $P
+echo "Reports password: $REPORTS_PASS"
 ```
 
-Set all secrets (enter the value when prompted after each command):
-```bash
-# Reports dashboard auth
-wrangler pages secret put REPORTS_USER --project-name lander-[SLUG]
-# → enter the reports username from intake
+Every line should end with `Success! Uploaded secret`. Note the printed password: it's shown to the person in Phase 12 and is **never** written into any file. (The token is only used by the dashboard; nobody needs to save it.)
 
-wrangler pages secret put REPORTS_PASS --project-name lander-[SLUG]
-# → enter the reports password from intake
-
-wrangler pages secret put REPORTS_TOKEN --project-name lander-[SLUG]
-# → enter the generated token from above
-
-# Dashboard display values
-wrangler pages secret put PROJECT_NAME --project-name lander-[SLUG]
-# → enter the business name from intake
-
-wrangler pages secret put PROJECT_SLUG --project-name lander-[SLUG]
-# → enter the client slug
-
-# Variant preview URLs (labels come from the rounds table seeded above)
-wrangler pages secret put VARIANT_A_URL --project-name lander-[SLUG]
-# → enter: /?ab_variant=a
-
-wrangler pages secret put VARIANT_B_URL --project-name lander-[SLUG]
-# → enter: /b
-```
+If piping doesn't work on their machine, run each `wrangler pages secret put NAME --project-name lander-[SLUG]` on its own and paste the value at the hidden prompt. `VARIANT_A_URL` is `/a` and `VARIANT_B_URL` is `/b`.
 
 ```bash
 # Commit wrangler.toml and deploy
@@ -449,10 +453,10 @@ wrangler pages deploy . --project-name lander-[SLUG]
 **Wire up the D1 binding via Cloudflare API** — `wrangler.toml` alone does NOT connect the database to the Pages project. This API call is required or the reports page will show "DB not configured":
 
 ```bash
-CF_TOKEN=$(cat ~/Library/Preferences/.wrangler/config/default.toml 2>/dev/null | grep oauth_token | awk '{print $3}' | tr -d '"')
-if [ -z "$CF_TOKEN" ]; then
-  CF_TOKEN=$(cat ~/.wrangler/config/default.toml 2>/dev/null | grep oauth_token | awk '{print $3}' | tr -d '"')
-fi
+CF_TOKEN=""
+for f in ~/Library/Preferences/.wrangler/config/default.toml ~/.config/.wrangler/config/default.toml ~/.wrangler/config/default.toml "$APPDATA/xdg.config/.wrangler/config/default.toml"; do
+  [ -f "$f" ] && CF_TOKEN=$(grep oauth_token "$f" | awk '{print $3}' | tr -d '"') && [ -n "$CF_TOKEN" ] && break
+done
 if [ -z "$CF_TOKEN" ]; then
   echo "ERROR: Could not find Wrangler auth token. Make sure you're logged in (run: wrangler whoami) and try again."
   exit 1
@@ -485,7 +489,8 @@ Load `references/cloudflare-steps.md` → "Verifying the Split Test" and walk th
 1. Open `https://lander-[SLUG].pages.dev` in a fresh incognito window
 2. DevTools (F12) → Network tab → reload → click the domain request → Cookies tab
 3. Confirm `ab_variant=a` or `ab_variant=b` is present
-4. Close the incognito window and open a fresh one — confirm the variant alternates
+4. Close the incognito window and open a fresh one. Confirm the variant alternates
+5. Open `https://lander-[SLUG].pages.dev/a` and `/b`. Each always shows that variant (these are the preview links on the reports page)
 
 Do not proceed until the split test cookie is confirmed working.
 
@@ -530,12 +535,23 @@ If provided:
 cp /path/to/favicon.png /tmp/repo-[SLUG]/favicon.png
 ```
 
-Update `README.md` — add the `.pages.dev` URL at the top under the project name.
+Update `README.md`: fill in the "Lander details" table (business, `.pages.dev` URL, date). **Never write the reports username, password, or token into README.md or any repo file.** The README lives in GitHub and every file in the folder is uploaded by `wrangler pages deploy .`. Check before committing:
+
+```bash
+grep -rniE "password|REPORTS_(PASS|TOKEN)\s*[:=|]" /tmp/repo-[SLUG] --include=*.md | grep -v "No passwords here" \
+  && echo "STOP: credential text in a .md file, remove it" || echo "OK: no credentials in docs"
+```
 
 ```bash
 git add . && git commit -m "Add favicon, SEO titles, confirm noindex" && git push
 wrangler pages deploy . --project-name lander-[SLUG]
 ```
+
+Confirm internal files aren't public (the template's `_worker.js` returns 404 for them):
+```bash
+for f in README.md wrangler.toml schema.sql; do echo "$(curl -s -o /dev/null -w '%{http_code}' https://lander-[SLUG].pages.dev/$f) $f"; done   # all must be 404
+```
+If any return 200, the repo was made from an older copy of the template. Copy the "Internal files" block from the current `Leadgenpreneur-Team/laa-lander-template` `_worker.js` into this repo's `_worker.js` (just above the final `return env.ASSETS.fetch(request);`), commit, and redeploy.
 
 ---
 
@@ -617,10 +633,10 @@ Most landers use the bare apex as canonical. Note the answer for Step 5.
 **Step 3 — Add both custom domains (automated):**
 
 ```bash
-CF_TOKEN=$(cat ~/Library/Preferences/.wrangler/config/default.toml 2>/dev/null | grep oauth_token | awk '{print $3}' | tr -d '"')
-if [ -z "$CF_TOKEN" ]; then
-  CF_TOKEN=$(cat ~/.wrangler/config/default.toml 2>/dev/null | grep oauth_token | awk '{print $3}' | tr -d '"')
-fi
+CF_TOKEN=""
+for f in ~/Library/Preferences/.wrangler/config/default.toml ~/.config/.wrangler/config/default.toml ~/.wrangler/config/default.toml "$APPDATA/xdg.config/.wrangler/config/default.toml"; do
+  [ -f "$f" ] && CF_TOKEN=$(grep oauth_token "$f" | awk '{print $3}' | tr -d '"') && [ -n "$CF_TOKEN" ] && break
+done
 ACCOUNT_ID=$(wrangler whoami 2>&1 | grep -oE '[0-9a-f]{32}' | head -1)
 DOMAIN="[DOMAIN]"
 
@@ -765,7 +781,7 @@ Do not proceed to Phase 12 until all five steps pass.
 
 ## Phase 12: Wrap-Up
 
-Print the following summary to the conversation and tell the user to save it somewhere they won't lose it (notes app, password manager, ClickUp task, etc.):
+Print the following summary to the conversation and tell the user to save it in a password manager (or wherever they keep client logins). Don't save it to any file yourself:
 
 ```
 --- LANDER DEPLOYMENT COMPLETE ---
@@ -773,10 +789,11 @@ Print the following summary to the conversation and tell the user to save it som
 Client:        [BUSINESS NAME]
 Live URL:      https://[DOMAIN]
 Reports page:  https://[DOMAIN]/reports
-Reports login: [USERNAME] / [PASSWORD]
+Reports login: [USERNAME] / [REPORTS_PASS generated in Phase 6]
+Preview A / B: https://[DOMAIN]/a  and  https://[DOMAIN]/b
 GitHub repo:   https://github.com/[USER_GITHUB_ORG]/lander-[SLUG]
 
-Save the reports password — there is no recovery option.
+Save the reports password now. It isn't stored anywhere else. (If it's ever lost, re-run `wrangler pages secret put REPORTS_PASS --project-name lander-[SLUG]` with a new one.)
 ---
 ```
 

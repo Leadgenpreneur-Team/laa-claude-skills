@@ -1,7 +1,7 @@
 ---
 name: edit-lander-laa
 description: "Makes a targeted edit to a live client landing page without replacing the whole HTML file. Use for client-requested changes like updating a phone number, headline, button text, image, or any other small content update. Works on index-a.html, index-b.html, thank-you.html, or all three. Triggers: edit lander, update phone number, change headline, client wants a change, fix the lander, /edit-lander-laa, /edit-lander."
-version: 1.1.0
+version: 1.2.0
 ---
 
 # edit-lander-laa
@@ -132,6 +132,13 @@ Do not commit until confirmed.
   grep -c "leadconnectorhq.com" /tmp/edit-$SLUG/index-b.html
   ```
 
+**Preview bigger changes before they go live.** For anything visual (new image, new section, layout or color change), open the edited file locally first:
+```bash
+open /tmp/edit-$SLUG/[EDITED_FILE]        # Mac
+start "" /tmp/edit-$SLUG/[EDITED_FILE]    # Windows
+```
+Images load as long as they're referenced as `assets/...` or `/assets/...` relative to the page. The GHL form shows as normal. If the person wants a shareable link to approve first (for example, to send to their client), and build-lander-laa is installed, run its `scripts/make_preview.py` on the edited file and publish the output as a Claude artifact. Get a clear OK before Phase 5.
+
 ---
 
 ## Phase 5: Commit, Push, and Redeploy
@@ -156,13 +163,18 @@ Write the change to the D1 audit log so it's visible in the reports dashboard:
 
 ```bash
 wrangler d1 execute lander-$SLUG-db \
-  --command "INSERT INTO audit_log (action, detail) VALUES ('note', '[brief description of what changed, e.g. Phone number updated: 916-555-1234 to 916-888-9999 — all three files]')" \
+  --command "INSERT INTO audit_log (action, detail) VALUES ('note', '[brief description of what changed, e.g. Phone number updated from 916-555-1234 to 916-888-9999 on all three pages]')" \
   --remote
 ```
 
 ---
 
 ## Phase 7: Verify
+
+The main URL (`/`) shows whichever variant the visitor's cookie picked, so check each page directly:
+- Variant A: `https://[DOMAIN]/a`
+- Variant B: `https://[DOMAIN]/b`
+- Thank-you: `https://[DOMAIN]/thank-you`
 
 Ask them to confirm the change looks correct on the live site. They should check:
 - The change appears correctly

@@ -133,7 +133,8 @@ GHL nests the workflow's Custom Data under a `customData` object. The worker rea
 3. **Call test:**
    - First, point the pool forwarding to **your own phone** (GHL → the number pool → forwarding number). This way the test call reaches you, not the client. Revert it when done.
    - Make sure the workflow's **re-entry is ON** — workflow **Settings** tab → **Allow Re-Entry** → ON.
-   - Call the lander number, and **once it connects, stay on for at least 60 seconds** before hanging up. The duration counts from when the call connects — 60 seconds gives a safe buffer over the 30-second gate.
+   - **Call a tracking number from this client's number pool** (the swap number the lander shows once call tracking is live, not the client's main business number), and **call from a different phone than the one the pool forwards to**. A phone can't answer its own call, and calling the business number directly skips GHL call tracking, so nothing fires.
+   - **Once it connects, stay on for at least 60 seconds** before hanging up. The duration counts from when the call connects, and 60 seconds gives a safe buffer over the 30-second gate.
    - In the GHL webhook's **View details**, confirm the response is `"events_received":1`.
    - ⚠️ **The Contact will NOT appear in the Test Events feed** — `phone_call`-source server events don't render there. This is normal. Verify the call via `events_received:1`, not the feed. Tell the user this before they look, or they'll think it's broken.
 4. **Remove `META_TEST_EVENT_CODE`** and redeploy before going live, or events keep flagging as test traffic.

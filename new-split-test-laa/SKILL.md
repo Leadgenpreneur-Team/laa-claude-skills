@@ -1,7 +1,7 @@
 ---
 name: new-split-test-laa
 description: "Starts a new A/B split test round on a live client landing page. Use when an A/B test has a winner and it's time to promote the winner and deploy a new challenger. If Variant B won, it becomes the new Variant A and the new challenger becomes Variant B. If Variant A won, the new challenger simply replaces Variant B. Handles bundler detection, tracking script preservation, GitHub file swap, rounds table update, redeploy, and verification. Triggers: new split test, start new test, variant won, new challenger, promote winner, /new-split-test-laa, /new-split-test."
-version: 1.3.0
+version: 1.4.0
 ---
 
 # new-split-test-laa
@@ -76,9 +76,9 @@ Then ask the user how they want to build the challenger:
 
 > "I have the current variant files. How do you want to build the new challenger?
 >
-> **A — Simple edit (headline, button text, CTA copy, etc.):** Tell me what you want to change and I'll edit the file directly. No Claude Design needed.
+> **A, simple edit (headline, button text, CTA copy, etc.):** Tell me what you want to change and I'll edit the file directly. No Claude Design needed.
 >
-> **B — Full redesign in Claude Design:** I'll save the current files to `~/Downloads/lander-$SLUG-variants/` so you can upload one into Claude Design, build the new variant there, and export it as a folder."
+> **B, bigger redesign:** either I build it for you (if build-lander-laa is installed, tell me what you want and I'll design it from the winning page), or you build it yourself in Claude Design. For Claude Design, I'll save the current files to `~/Downloads/lander-$SLUG-variants/` so you can attach one to a new Design in Claude, build the new variant there, and Export it as a .zip."
 
 **If they choose A (simple edit):**
 
@@ -87,6 +87,13 @@ Ask what change they want and which variant it should be based on (the winner, o
 ```bash
 # Edit /tmp/update-$SLUG/index-a.html or index-b.html as appropriate
 ```
+
+**Preview it before anything goes live.** Open the edited file so the person can see it:
+```bash
+open /tmp/update-$SLUG/[EDITED_FILE]        # Mac
+start "" /tmp/update-$SLUG/[EDITED_FILE]    # Windows
+```
+If they want a link to share or approve on their phone, and build-lander-laa is installed, run its `scripts/make_preview.py` on the edited file and publish the output as a Claude artifact (the form shows as a placeholder there). Make any further changes to the file in `/tmp/update-$SLUG/`, then refresh. Get a clear OK before continuing.
 
 After editing, set `/tmp/new-challenger.html` to the edited file path for use in Phase 5:
 
@@ -106,7 +113,9 @@ cp /tmp/update-$SLUG/index-b.html ~/Downloads/lander-$SLUG-variants/index-b.html
 
 Tell them:
 
-> "Saved to `~/Downloads/lander-$SLUG-variants/`. Upload whichever file you want to start from into Claude Design, build your challenger, then export it to a folder on your computer."
+> "Saved to `~/Downloads/lander-$SLUG-variants/`. In Claude, start a new Design and attach the file you want to start from (plus the `assets` folder if it has one). Build your challenger, then use **Export → Download as .zip** and unzip it into a folder. Tell me the folder path when you're done."
+
+If build-lander-laa is installed and the person wants Claude to build it instead, use build-lander-laa's copy rules and preview loop (`references/copy-rules.md` and `references/preview.md`) on a copy of the winning page, then continue at Phase 1B with that folder.
 
 ---
 
@@ -190,7 +199,7 @@ Do not proceed until the challenger file is confirmed to be plain HTML.
 
 ```bash
 grep -oE 'src="[^"]*\.(jpg|jpeg|png|svg|webp|gif)"' /tmp/new-challenger.html \
-  | grep -v 'src="/assets/\|src="http\|src="data:' || echo "No missing assets detected"
+  | grep -v 'src="/assets/\|src="assets/\|src="http\|src="data:' || echo "No missing assets detected"
 ```
 
 If any plain filenames are found, tell the user:
@@ -514,7 +523,7 @@ Open `https://[DOMAIN]/b` in a fresh incognito window. Confirm the new challenge
 
 **Step 2 — Verify Variant A:**
 
-Open `https://[DOMAIN]/?ab_variant=a` in a fresh incognito window. Confirm Variant A loads correctly:
+Open `https://[DOMAIN]/a` in a fresh incognito window. Confirm Variant A loads correctly:
 - If Variant B won, this should now show the former Variant B (the winner).
 - If Variant A won, this should look the same as before.
 
