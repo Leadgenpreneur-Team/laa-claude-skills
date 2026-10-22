@@ -1,4 +1,4 @@
-# deploy-lander-laa v4.1.0
+# deploy-lander-laa v4.2.0
 
 Puts a landing page live, end to end: GitHub repo, Cloudflare Pages and D1, the 50/50 split test, GHL form, tracking scripts, optional Meta Conversions API, the reports dashboard, and a custom domain.
 
@@ -33,6 +33,11 @@ deploy-lander-laa/
     cloudflare-steps.md           domain purchase, DNS, split test check
     meta-capi.md                  optional Meta Conversions API setup
 ```
+
+## What changed in v4.2.0
+
+- Shows the reports login (admin plus the generated password) right after setting it, and copies the password to the clipboard
+- Always prints the Google Ads sitelinks instead of only saying they were made
 
 ## What changed in v4.1.0
 
