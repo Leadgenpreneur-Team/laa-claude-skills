@@ -24,7 +24,7 @@ The usual order: **build → deploy → (edit as needed) → new split test** wh
 - The Claude desktop app with Claude Code
 - Python 3 (Macs: `xcode-select --install` if it's missing)
 - For deploying: a GitHub account with the GitHub CLI logged in (`gh auth login`), and a Cloudflare account with Wrangler logged in (`npm install -g wrangler`, then `wrangler login`). deploy-lander-laa checks both and walks you through anything missing.
-- Optional: the **LAA Landing Page Templates** pack (Skool lesson M1.5) for build-lander-laa
+- Optional: the **LAA Landing Page Templates** pack (Skool lesson M1.4) for build-lander-laa
 
 ## Template
 
