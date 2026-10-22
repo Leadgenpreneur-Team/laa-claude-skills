@@ -1,7 +1,7 @@
 ---
 name: deploy-lander-laa
 description: "Deploys a landing page end-to-end for agency owners and business owners. Starts from a folder made by build-lander-laa, finished HTML files from Claude Design, or a clone of a live lander for a new ad channel. Handles GitHub repo creation, Cloudflare Pages + D1 + env vars, GHL form injection, split-test setup, Meta tracking (pixel-only or full CAPI), tracking scripts, SEO/favicon, automated domain connection, and Google Ads sitelinks. Triggers: deploy lander, deploy my lander, clone lander, duplicate lander for google/facebook, set up landing page, launch client lander, deploy lander for client, /deploy-lander-laa, /deploy-lander."
-version: 4.1.0
+version: 4.2.0
 ---
 
 # deploy-lander-laa
@@ -59,7 +59,7 @@ Ask these questions up front. All are required except domain (can be TBD) and ag
 | Phone number | Any format — used to verify call tracking attributes are present. |
 | Variant A description | Briefly describe what Variant A shows — e.g. "Original layout — hero + form above fold" or "Headline: Get a Free Quote Today". Appears in the reports dashboard for Round 1. |
 | Variant B description | What one thing does Variant B test vs Variant A? e.g. "New headline — 'Same-Day Service Available'". Appears in the reports dashboard. |
-| Reports username | Username to log in to the reports dashboard. Suggest `admin` or the client's first name. |
+| Reports username | Don't ask. It's always `admin` (the lessons tell students this). |
 | Reports password | **Don't ask. Claude generates it** in Phase 6 (`openssl rand -base64 24 \| tr -d '/+=' \| cut -c1-20`), unique per lander. Claude shows it once in Phase 12 and the person saves it in a password manager. It never goes in README.md or any file in the repo. |
 | Meta tracking level | Ask: "Will you be running Meta (Facebook/Instagram) ads for this client? If so, do you have — or plan to get — a Conversions API access token?" Three options: **Full CAPI** — they have both a Meta Pixel and a CAPI access token. **Pixel-only** — they have the Pixel but no access token. **No Meta** — no Meta ads at all. |
 | Domain name | Optional at this stage. Note it if they have one — needed at Phase 10. |
@@ -449,8 +449,9 @@ Generate the reports password and API token and set every secret in **one** comm
 P=lander-[SLUG]
 REPORTS_PASS=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-20)
 REPORTS_TOKEN=$(openssl rand -hex 16)
-printf '%s' "[REPORTS_USERNAME]"   | wrangler pages secret put REPORTS_USER  --project-name $P
+printf '%s' "admin"              | wrangler pages secret put REPORTS_USER  --project-name $P
 printf '%s' "$REPORTS_PASS"        | wrangler pages secret put REPORTS_PASS  --project-name $P
+(printf '%s' "$REPORTS_PASS" | pbcopy 2>/dev/null || printf '%s' "$REPORTS_PASS" | clip 2>/dev/null) && echo "Password copied to clipboard"
 printf '%s' "$REPORTS_TOKEN"       | wrangler pages secret put REPORTS_TOKEN --project-name $P
 printf '%s' "[BUSINESS NAME]"      | wrangler pages secret put PROJECT_NAME  --project-name $P
 printf '%s' "[SLUG]"               | wrangler pages secret put PROJECT_SLUG  --project-name $P
@@ -459,7 +460,13 @@ printf '%s' "/b"                   | wrangler pages secret put VARIANT_B_URL --p
 echo "Reports password: $REPORTS_PASS"
 ```
 
-Every line should end with `Success! Uploaded secret`. Note the printed password: it's shown to the person in Phase 12 and is **never** written into any file. (The token is only used by the dashboard; nobody needs to save it.)
+Every line should end with `Success! Uploaded secret`.
+
+**Show the login right away, in this same reply.** Don't wait until Phase 12 and don't make the person ask:
+
+> "Your reports dashboard login: username **admin**, password **[REPORTS_PASS]**. I also copied the password to your clipboard. Save it in your password manager now."
+
+Copy it to the clipboard in the same command that set it (`printf '%s' "$REPORTS_PASS" | pbcopy` on Mac, `| clip` on Windows). Show it again in the Phase 12 summary. The password is **never** written into any file. (The token is only used by the dashboard; nobody needs to save it.) If the person loses it later, generate a new one, set `REPORTS_PASS` again, redeploy, and show it the same way.
 
 If piping doesn't work on their machine, run each `wrangler pages secret put NAME --project-name lander-[SLUG]` on its own and paste the value at the hidden prompt. `VARIANT_A_URL` is `/a` and `VARIANT_B_URL` is `/b`.
 
@@ -809,7 +816,7 @@ Print the following summary to the conversation and tell the user to save it in 
 Client:        [BUSINESS NAME]
 Live URL:      https://[DOMAIN]
 Reports page:  https://[DOMAIN]/reports
-Reports login: [USERNAME] / [REPORTS_PASS generated in Phase 6]
+Reports login: admin / [REPORTS_PASS generated in Phase 6]
 Preview A / B: https://[DOMAIN]/a  and  https://[DOMAIN]/b
 GitHub repo:   https://github.com/[USER_GITHUB_ORG]/lander-[SLUG]
 
@@ -849,4 +856,4 @@ If they say yes, read `index-a.html` and identify 4 meaningful anchor targets (e
 | How It Works | `https://[DOMAIN]/#how-it-works` |
 | Service Area | `https://[DOMAIN]/#service-area` |
 
-Adjust labels and anchors to match the actual page content.
+Adjust labels and anchors to match the actual page content. **Always print the finished sitelinks table in your reply.** Don't just say they're done.
