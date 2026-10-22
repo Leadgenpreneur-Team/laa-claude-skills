@@ -1,4 +1,4 @@
-# build-lander-laa v1.0.0
+# build-lander-laa v1.0.1
 
 Builds a finished landing page for a local service business, lets you preview and change it, then hands it to **deploy-lander-laa** to put it live.
 
@@ -29,7 +29,7 @@ When you say it looks good, Claude offers to deploy it with deploy-lander-laa.
 
 - The Claude desktop app with Claude Code
 - Python 3 (Macs: run `xcode-select --install` if it's missing)
-- Optional: the **LAA Landing Page Templates** pack from Skool lesson M1.5. Unzip it into this skill's `templates/` folder, or Claude asks where it is. Without it, Claude builds from a standard layout.
+- Optional: the **LAA Landing Page Templates** pack from Skool lesson M1.4. Unzip it into this skill's `templates/` folder, or Claude asks where it is. Without it, Claude builds from a standard layout.
 - Optional: Playwright, for the automatic phone and desktop layout check (`pip3 install playwright && python3 -m playwright install chromium`). Without it, you check the layout by eye.
 
 ## Files
@@ -48,5 +48,9 @@ build-lander-laa/
     render_check.py         headline length and layout check at 390px and 1280px
     make_preview.py         builds the artifact preview copy
     unbundle.py             turns a Claude Design bundle into plain HTML
-  templates/                put the M1.5 template pack here
+  templates/                put the M1.4 template pack here
 ```
+
+## What changed in v1.0.1
+
+- Points to the current Skool lesson numbers: the template pack is M1.4, and the service area map prompt is M2.2 (with its new link)

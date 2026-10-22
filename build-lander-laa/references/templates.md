@@ -2,7 +2,7 @@
 
 ## 1. LAA template pack (best)
 
-The LAA Landing Page Templates zip is in the Skool classroom, lesson M1.5. Members download it once.
+The LAA Landing Page Templates zip is in the Skool classroom, lesson M1.4. Members download it once.
 
 Where to look, in order:
 1. `$SKILL_DIR/templates/` (already unzipped from a past run)
